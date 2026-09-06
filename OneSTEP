@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f9f8">
+  <title>OneSTEP｜あなたの頑張りを、AIが見つける。</title>
+  <style>
+    :root {
+      --bg: #f5f8f7;
+      --surface: #ffffff;
+      --surface-soft: #edf5f3;
+      --primary: #326b67;
+      --primary-dark: #255450;
+      --primary-light: #dcecea;
+      --text: #263332;
+      --muted: #71807e;
+      --line: #e2e9e7;
+      --accent: #e7b960;
+      --shadow: 0 12px 30px rgba(41, 72, 68, .08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: #e8eeec; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: var(--bg);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: max(24px, env(safe-area-inset-top)) 22px calc(36px + env(safe-area-inset-bottom));
+      animation: enter .28s ease both;
+    }
+
+    .screen.active { display: block; }
+    @keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+
+    .home-screen {
+      background:
+        radial-gradient(circle at 90% 4%, rgba(99, 159, 151, .17), transparent 28%),
+        var(--bg);
+      padding-top: max(54px, env(safe-area-inset-top));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .13em;
+    }
+
+    .eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--primary); border-radius: 9px; }
+
+    .brand { margin: 0; font-size: 40px; line-height: 1; letter-spacing: -.04em; color: var(--primary-dark); }
+    .tagline { margin: 16px 0 8px; font-size: 18px; line-height: 1.7; font-weight: 650; }
+    .home-note { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .home-menu { display: grid; gap: 14px; margin-top: 52px; }
+
+    .menu-card {
+      width: 100%;
+      min-height: 104px;
+      border: 1px solid rgba(50, 107, 103, .08);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 48px 1fr 24px;
+      align-items: center;
+      gap: 15px;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s;
+    }
+
+    .menu-card:active { transform: scale(.985); box-shadow: 0 5px 15px rgba(41,72,68,.08); }
+    .menu-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--primary-light); color: var(--primary-dark); font-size: 22px; }
+    .menu-copy strong { display: block; font-size: 17px; margin-bottom: 6px; }
+    .menu-copy small { color: var(--muted); font-size: 12px; }
+    .arrow { color: #9badaa; font-size: 22px; }
+
+    .topbar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; margin-bottom: 27px; }
+    .topbar h1 { margin: 0; text-align: center; font-size: 18px; }
+    .back {
+      width: 42px; height: 42px; border: 0; border-radius: 14px; background: var(--surface);
+      color: var(--text); font-size: 24px; cursor: pointer; box-shadow: 0 5px 15px rgba(41,72,68,.06);
+    }
+
+    .step-track { display: flex; align-items: center; margin: 4px 4px 28px; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--line); color: #81908e; font-size: 12px; font-weight: 800; }
+    .step-dot.active { color: white; background: var(--primary); box-shadow: 0 5px 13px rgba(50,107,103,.22); }
+    .step-line { height: 3px; flex: 1; background: var(--line); }
+    .step-line.active { background: var(--primary); }
+
+    .intro { margin-bottom: 25px; }
+    .intro h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.02em; }
+    .intro p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+    .section-card { margin-bottom: 17px; padding: 22px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .section-title { display: block; margin-bottom: 16px; font-size: 15px; font-weight: 750; }
+    .section-subtitle { display: block; margin: -8px 0 15px; color: var(--muted); font-size: 12px; }
+    .option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .option-grid.three { grid-template-columns: repeat(3, 1fr); }
+
+    .chip { position: relative; }
+    .chip input { position: absolute; opacity: 0; pointer-events: none; }
+    .chip span {
+      min-height: 45px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 14px;
+      display: grid; place-items: center; background: #fbfcfc; color: #566462; font-size: 13px; cursor: pointer; transition: .18s;
+    }
+    .chip input:checked + span { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
+    .chip input:focus-visible + span { outline: 3px solid rgba(50,107,103,.18); }
+
+    input[type="text"], textarea {
+      width: 100%; border: 1px solid var(--line); border-radius: 15px; background: #fafcfb;
+      padding: 15px; color: var(--text); outline: none; resize: vertical; line-height: 1.7;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(50,107,103,.1); background: white; }
+    textarea { min-height: 150px; }
+    textarea.import-area { min-height: 270px; }
+    ::placeholder { color: #a5b0ae; }
+
+    .actions { display: grid; gap: 11px; margin-top: 26px; }
+    .btn { width: 100%; min-height: 55px; border: 0; border-radius: 17px; font-weight: 750; cursor: pointer; transition: .18s; }
+    .btn:active { transform: scale(.985); }
+    .btn-primary { color: white; background: var(--primary); box-shadow: 0 9px 20px rgba(50,107,103,.2); }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { color: var(--primary-dark); background: var(--primary-light); }
+    .btn-ghost { color: var(--muted); background: transparent; border: 1px solid var(--line); }
+
+    .question-number { display: inline-grid; place-items: center; width: 27px; height: 27px; margin-right: 8px; border-radius: 9px; background: var(--surface-soft); color: var(--primary); font-size: 12px; }
+    .mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+    .mood span { min-height: 52px; font-size: 23px; padding: 5px; }
+
+    .stars { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 7px; }
+    .stars input { position: absolute; opacity: 0; }
+    .stars label { color: #d8dfdd; font-size: 34px; cursor: pointer; line-height: 1; }
+    .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: var(--accent); }
+
+    .report-hero { padding: 27px 23px; margin-bottom: 18px; border-radius: 25px; background: linear-gradient(145deg, var(--primary-dark), var(--primary)); color: white; }
+    .report-hero .spark { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 22px; border-radius: 15px; background: rgba(255,255,255,.14); font-size: 20px; }
+    .report-hero h2 { margin: 0 0 8px; font-size: 24px; }
+    .report-hero p { margin: 0; color: rgba(255,255,255,.75); font-size: 13px; line-height: 1.7; }
+    .report-sections { display: grid; gap: 12px; counter-reset: report; }
+    .report-item { display: flex; align-items: center; gap: 14px; padding: 19px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; font-weight: 700; }
+    .report-item::before { counter-increment: report; content: counter(report, decimal-leading-zero); color: var(--primary); font-size: 12px; letter-spacing: .06em; }
+
+    .updated { margin: -13px 0 25px; color: var(--muted); font-size: 12px; text-align: center; }
+    .period-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; margin-bottom: 31px; }
+    .period-card { min-height: 84px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; }
+    .period-card.active { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px rgba(50,107,103,.16); }
+    .list-heading { margin: 0 0 14px; font-size: 16px; }
+    .record-list { display: grid; gap: 11px; }
+    .record { padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+    .record-date { margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+    .record p { margin: 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .import-info { padding: 21px; margin-bottom: 17px; border-radius: 20px; background: var(--surface-soft); color: #47615e; font-size: 14px; line-height: 1.9; }
+    .toast { position: fixed; z-index: 20; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); width: max-content; max-width: calc(100% - 44px); padding: 13px 18px; border-radius: 14px; background: #243634; color: white; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; box-shadow: var(--shadow); }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (min-width: 520px) {
+      body { padding: 18px 0; }
+      .app { min-height: calc(100vh - 36px); border-radius: 30px; box-shadow: 0 25px 70px rgba(31,55,52,.13); }
+      .screen { min-height: calc(100vh - 36px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="screen home-screen active" id="home" aria-labelledby="home-title">
+      <span class="eyebrow">5 MINUTES JOURNAL</span>
+      <h1 class="brand" id="home-title">OneSTEP</h1>
+      <p class="tagline">あなたの頑張りを、<br>AIが見つける。</p>
+      <p class="home-note">今日をやさしく振り返り、明日への一歩へ。</p>
+      <nav class="home-menu" aria-label="メインメニュー">
+        <button class="menu-card" data-go="record-step1"><span class="menu-icon">✎</span><span class="menu-copy"><strong>今日の記録</strong><small>寝る前5分の振り返り</small></span><span class="arrow">›</span></button>
+        <button class="menu-card" data-go="reports"><span class="menu-icon">▥</span><span class="menu-copy"><strong>レポート</strong><small>これまでの歩みを見る</small></span><span class="arrow">›</span></button>
+        <button class="menu-card" data-go="import"><span class="menu-icon">＋</span><span class="menu-copy"><strong>日記を取り込む</strong><small>過去の日記をまとめて追加</small></span><span class="arrow">›</span></button>
+      </nav>
+    </section>
+
+    <section class="screen" id="record-step1" aria-labelledby="step1-title">
+      <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1>今日の記録</h1><span></span></header>
+      <div class="step-track" aria-label="ステップ1 / 2"><span class="step-dot active">1</span><span class="step-line"></span><span class="step-dot">2</span></div>
+      <div class="intro"><h2 id="step1-title">今日を思い出す</h2><p>まずは、今日あったことを気軽に教えてください。</p></div>
+      <div class="section-card">
+        <span class="section-title">行動チェック</span>
+        <div class="option-grid">
+          <label class="chip"><input type="checkbox"><span>💼 仕事</span></label><label class="chip"><input type="checkbox"><span>📚 勉強</span></label>
+          <label class="chip"><input type="checkbox"><span>🏃 運動</span></label><label class="chip"><input type="checkbox"><span>🏠 家事</span></label>
+          <label class="chip"><input type="checkbox"><span>🎨 趣味</span></label><label class="chip"><input type="checkbox"><span>🛍 買い物</span></label>
+          <label class="chip"><input type="checkbox"><span>＋ その他</span></label>
+        </div>
+      </div>
+      <label class="section-card" style="display:block"><span class="section-title">今日だけの出来事</span><input type="text" placeholder="印象に残った出来事はありますか？"></label>
+      <label class="section-card" style="display:block"><span class="section-title">自由記述（日記）</span><textarea placeholder="今日あったことや、感じたことを自由に書いてください。"></textarea></label>
+      <div class="actions"><button class="btn btn-primary" data-go="record-step2">次へ</button><button class="btn btn-ghost" data-dummy="下書き保存">下書き保存</button></div>
+    </section>
+
+    <section class="screen" id="record-step2" aria-labelledby="step2-title">
+      <header class="topbar"><button class="back" data-go="record-step1" aria-label="前のステップへ戻る">‹</button><h1>今日の記録</h1><span></span></header>
+      <div class="step-track" aria-label="ステップ2 / 2"><span class="step-dot active">✓</span><span class="step-line active"></span><span class="step-dot active">2</span></div>
+      <div class="intro"><h2 id="step2-title">心に目を向ける</h2><p>正解はありません。今の気持ちに近いものを選んでください。</p></div>
+      <div class="section-card"><span class="section-title"><i class="question-number">01</i>今日の気分</span><div class="mood-grid">
+        <label class="chip mood"><input type="radio" name="mood"><span title="とても良い">😄</span></label><label class="chip mood"><input type="radio" name="mood"><span title="良い">😊</span></label><label class="chip mood"><input type="radio" name="mood"><span title="普通">😐</span></label><label class="chip mood"><input type="radio" name="mood"><span title="少し悪い">😔</span></label><label class="chip mood"><input type="radio" name="mood"><span title="悪い">😣</span></label>
+      </div></div>
+      <div class="section-card"><span class="section-title"><i class="question-number">02</i>今日の満足度</span><div class="stars" aria-label="今日の満足度">
+        <input id="star5" type="radio" name="rating"><label for="star5">★</label><input id="star4" type="radio" name="rating"><label for="star4">★</label><input id="star3" type="radio" name="rating"><label for="star3">★</label><input id="star2" type="radio" name="rating"><label for="star2">★</label><input id="star1" type="radio" name="rating"><label for="star1">★</label>
+      </div></div>
+      <div class="section-card"><span class="section-title"><i class="question-number">03</i>今日、自分なりに頑張ったと思うこと</span><span class="section-subtitle">いくつでも選べます</span><div class="option-grid three">
+        <label class="chip"><input type="checkbox"><span>仕事</span></label><label class="chip"><input type="checkbox"><span>勉強</span></label><label class="chip"><input type="checkbox"><span>運動</span></label><label class="chip"><input type="checkbox"><span>家事</span></label><label class="chip"><input type="checkbox"><span>その他</span></label><label class="chip"><input type="checkbox"><span>思いつかない</span></label>
+      </div></div>
+      <label class="section-card" style="display:block"><span class="section-title"><i class="question-number">04</i>明日はどんな一歩を踏み出したいですか</span><textarea style="min-height:110px" placeholder="小さな一歩で大丈夫です。"></textarea></label>
+      <div class="actions"><button class="btn btn-primary" data-go="ai-report">AIレポートを生成</button></div>
+    </section>
+
+    <section class="screen" id="ai-report" aria-labelledby="ai-report-title">
+      <header class="topbar"><button class="back" data-go="record-step2" aria-label="前の画面へ戻る">‹</button><h1>AIレポート</h1><span></span></header>
+      <div class="report-hero"><span class="spark">✦</span><h2 id="ai-report-title">今日も、おつかれさまでした。</h2><p>あなたの一日から、AIが見つけた頑張りをお届けします。</p></div>
+      <div class="report-sections">
+        <div class="report-item">今日の総評</div><div class="report-item">客観的評価</div><div class="report-item">今日見えた傾向</div><div class="report-item">成長したこと</div><div class="report-item">明日の一歩</div>
+      </div>
+      <div class="actions"><button class="btn btn-primary" data-go="home">ホームへ戻る</button><button class="btn btn-secondary" data-go="reports">レポートを見る</button></div>
+    </section>
+
+    <section class="screen" id="reports" aria-labelledby="reports-title">
+      <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="reports-title">レポート</h1><span></span></header>
+      <p class="updated">最終更新　2026/09/06 14:30</p>
+      <div class="period-grid" aria-label="表示期間"><button class="period-card active">今日</button><button class="period-card">今週</button><button class="period-card">今月</button><button class="period-card">期間指定</button></div>
+      <h2 class="list-heading">保存された記録一覧</h2>
+      <div class="record-list"><article class="record"><div class="record-date">2026/09/06　😊</div><p>今日は後輩の相談に…</p></article><article class="record"><div class="record-date">2026/09/05　🙂</div><p>勉強を続け…</p></article><article class="record"><div class="record-date">2026/09/04　😐</div><p>少し疲れて…</p></article></div>
+    </section>
+
+    <section class="screen" id="import" aria-labelledby="import-title">
+      <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="import-title">日記を取り込む</h1><span></span></header>
+      <div class="import-info">過去の日記を貼り付けることで、<br>AIが分析できるようになります。</div>
+      <label class="section-card" style="display:block"><span class="section-title">日記を貼り付ける</span><textarea class="import-area" placeholder="2026/6/2&#10;&#10;今日は…"></textarea></label>
+      <div class="actions"><button class="btn btn-primary" data-dummy="日記の取り込み">日記を取り込む</button></div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const screens = [...document.querySelectorAll('.screen')];
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    function showScreen(id, addHistory = true) {
+      const target = document.getElementById(id);
+      if (!target) return;
+      screens.forEach(screen => screen.classList.toggle('active', screen === target));
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      if (addHistory) history.pushState({ screen: id }, '', `#${id}`);
+    }
+
+    document.addEventListener('click', event => {
+      const nav = event.target.closest('[data-go]');
+      if (nav) showScreen(nav.dataset.go);
+
+      const dummy = event.target.closest('[data-dummy]');
+      if (dummy) {
+        clearTimeout(toastTimer);
+        toast.textContent = `${dummy.dataset.dummy}はPhase 1ではダミーです`;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      const period = event.target.closest('.period-card');
+      if (period) {
+        document.querySelectorAll('.period-card').forEach(button => button.classList.remove('active'));
+        period.classList.add('active');
+      }
+    });
+
+    window.addEventListener('popstate', event => showScreen(event.state?.screen || location.hash.slice(1) || 'home', false));
+    const initial = document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+    history.replaceState({ screen: initial }, '', initial === 'home' ? location.pathname : `#${initial}`);
+    showScreen(initial, false);
+  </script>
+</body>
+</html>
