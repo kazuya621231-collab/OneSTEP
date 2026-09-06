@@ -145,6 +145,7 @@
     }
     input[type="text"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(50,107,103,.1); background: white; }
     textarea { min-height: 150px; }
+    textarea.event-area { min-height: 92px; }
     textarea.import-area { min-height: 270px; }
     ::placeholder { color: #a5b0ae; }
 
@@ -170,8 +171,10 @@
     .report-hero h2 { margin: 0 0 8px; font-size: 24px; }
     .report-hero p { margin: 0; color: rgba(255,255,255,.75); font-size: 13px; line-height: 1.7; }
     .report-sections { display: grid; gap: 12px; counter-reset: report; }
-    .report-item { display: flex; align-items: center; gap: 14px; padding: 19px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; font-weight: 700; }
+    .report-item { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 14px; padding: 19px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
     .report-item::before { counter-increment: report; content: counter(report, decimal-leading-zero); color: var(--primary); font-size: 12px; letter-spacing: .06em; }
+    .report-item h3 { margin: -2px 0 9px; font-size: 15px; }
+    .report-item p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.8; }
 
     .updated { margin: -13px 0 25px; color: var(--muted); font-size: 12px; text-align: center; }
     .period-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; margin-bottom: 31px; }
@@ -221,7 +224,7 @@
           <label class="chip"><input type="checkbox"><span>＋ その他</span></label>
         </div>
       </div>
-      <label class="section-card" style="display:block"><span class="section-title">今日だけの出来事</span><input type="text" placeholder="印象に残った出来事はありますか？"></label>
+      <label class="section-card" style="display:block"><span class="section-title">今日だけの出来事</span><textarea class="event-area" placeholder="印象に残った出来事はありますか？"></textarea></label>
       <label class="section-card" style="display:block"><span class="section-title">自由記述（日記）</span><textarea placeholder="今日あったことや、感じたことを自由に書いてください。"></textarea></label>
       <div class="actions"><button class="btn btn-primary" data-go="record-step2">次へ</button><button class="btn btn-ghost" data-dummy="下書き保存">下書き保存</button></div>
     </section>
@@ -247,7 +250,11 @@
       <header class="topbar"><button class="back" data-go="record-step2" aria-label="前の画面へ戻る">‹</button><h1>AIレポート</h1><span></span></header>
       <div class="report-hero"><span class="spark">✦</span><h2 id="ai-report-title">今日も、おつかれさまでした。</h2><p>あなたの一日から、AIが見つけた頑張りをお届けします。</p></div>
       <div class="report-sections">
-        <div class="report-item">今日の総評</div><div class="report-item">客観的評価</div><div class="report-item">今日見えた傾向</div><div class="report-item">成長したこと</div><div class="report-item">明日の一歩</div>
+        <article class="report-item"><div><h3>今日の総評</h3><p>忙しい一日の中でも、目の前のことに丁寧に向き合えた一日でした。小さな積み重ねを大切にできています。</p></div></article>
+        <article class="report-item"><div><h3>客観的評価</h3><p>予定していたことだけでなく、周りへの気配りにも時間を使えています。自分が思う以上に、多くの役割を果たしました。</p></div></article>
+        <article class="report-item"><div><h3>今日見えた傾向</h3><p>誰かのために動いたことは自然に受け止め、自分の頑張りとして数えない傾向があります。その行動も、十分に価値のある頑張りです。</p></div></article>
+        <article class="report-item"><div><h3>成長したこと</h3><p>慌ただしい場面でも、気持ちを切り替えて行動できました。状況に合わせて一歩ずつ進める力が育っています。</p></div></article>
+        <article class="report-item"><div><h3>明日の一歩</h3><p>明日は、朝にやることをひとつだけ決めてみましょう。小さく始めることが、心に余裕をつくる一歩になります。</p></div></article>
       </div>
       <div class="actions"><button class="btn btn-primary" data-go="home">ホームへ戻る</button><button class="btn btn-secondary" data-go="reports">レポートを見る</button></div>
     </section>
