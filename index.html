@@ -119,6 +119,7 @@
     .step-dot.active { color: white; background: var(--primary); box-shadow: 0 5px 13px rgba(50,107,103,.22); }
     .step-line { height: 3px; flex: 1; background: var(--line); }
     .step-line.active { background: var(--primary); }
+    .record-updated { min-height: 18px; margin: -17px 4px 22px; color: var(--muted); font-size: 12px; text-align: right; }
 
     .intro { margin-bottom: 25px; }
     .intro h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.02em; }
@@ -214,36 +215,38 @@
     <section class="screen" id="record-step1" aria-labelledby="step1-title">
       <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1>今日の記録</h1><span></span></header>
       <div class="step-track" aria-label="ステップ1 / 2"><span class="step-dot active">1</span><span class="step-line"></span><span class="step-dot">2</span></div>
+      <p class="record-updated" data-last-updated aria-live="polite"></p>
       <div class="intro"><h2 id="step1-title">今日を思い出す</h2><p>まずは、今日あったことを気軽に教えてください。</p></div>
       <div class="section-card">
         <span class="section-title">行動チェック</span>
         <div class="option-grid">
-          <label class="chip"><input type="checkbox"><span>💼 仕事</span></label><label class="chip"><input type="checkbox"><span>📚 勉強</span></label>
-          <label class="chip"><input type="checkbox"><span>🏃 運動</span></label><label class="chip"><input type="checkbox"><span>🏠 家事</span></label>
-          <label class="chip"><input type="checkbox"><span>🎨 趣味</span></label><label class="chip"><input type="checkbox"><span>🛍 買い物</span></label>
-          <label class="chip"><input type="checkbox"><span>＋ その他</span></label>
+          <label class="chip"><input type="checkbox" data-record-field="actions" value="仕事"><span>💼 仕事</span></label><label class="chip"><input type="checkbox" data-record-field="actions" value="勉強"><span>📚 勉強</span></label>
+          <label class="chip"><input type="checkbox" data-record-field="actions" value="運動"><span>🏃 運動</span></label><label class="chip"><input type="checkbox" data-record-field="actions" value="家事"><span>🏠 家事</span></label>
+          <label class="chip"><input type="checkbox" data-record-field="actions" value="趣味"><span>🎨 趣味</span></label><label class="chip"><input type="checkbox" data-record-field="actions" value="買い物"><span>🛍 買い物</span></label>
+          <label class="chip"><input type="checkbox" data-record-field="actions" value="その他"><span>＋ その他</span></label>
         </div>
       </div>
-      <label class="section-card" style="display:block"><span class="section-title">今日だけの出来事</span><textarea class="event-area" placeholder="印象に残った出来事はありますか？"></textarea></label>
-      <label class="section-card" style="display:block"><span class="section-title">自由記述（日記）</span><textarea placeholder="今日あったことや、感じたことを自由に書いてください。"></textarea></label>
-      <div class="actions"><button class="btn btn-primary" data-go="record-step2">次へ</button><button class="btn btn-ghost" data-dummy="下書き保存">下書き保存</button></div>
+      <label class="section-card" style="display:block"><span class="section-title">今日だけの出来事</span><textarea class="event-area" data-record-field="todayEvent" placeholder="印象に残った出来事はありますか？"></textarea></label>
+      <label class="section-card" style="display:block"><span class="section-title">自由記述（日記）</span><textarea data-record-field="diary" placeholder="今日あったことや、感じたことを自由に書いてください。"></textarea></label>
+      <div class="actions"><button class="btn btn-primary" data-go="record-step2">次へ</button><button class="btn btn-ghost" data-save-draft>下書き保存</button></div>
     </section>
 
     <section class="screen" id="record-step2" aria-labelledby="step2-title">
       <header class="topbar"><button class="back" data-go="record-step1" aria-label="前のステップへ戻る">‹</button><h1>今日の記録</h1><span></span></header>
       <div class="step-track" aria-label="ステップ2 / 2"><span class="step-dot active">✓</span><span class="step-line active"></span><span class="step-dot active">2</span></div>
+      <p class="record-updated" data-last-updated aria-live="polite"></p>
       <div class="intro"><h2 id="step2-title">心に目を向ける</h2><p>正解はありません。今の気持ちに近いものを選んでください。</p></div>
       <div class="section-card"><span class="section-title"><i class="question-number">01</i>今日の気分</span><div class="mood-grid">
-        <label class="chip mood"><input type="radio" name="mood"><span title="とても良い">😄</span></label><label class="chip mood"><input type="radio" name="mood"><span title="良い">😊</span></label><label class="chip mood"><input type="radio" name="mood"><span title="普通">😐</span></label><label class="chip mood"><input type="radio" name="mood"><span title="少し悪い">😔</span></label><label class="chip mood"><input type="radio" name="mood"><span title="悪い">😣</span></label>
+        <label class="chip mood"><input type="radio" name="mood" data-record-field="mood" value="😄"><span title="とても良い">😄</span></label><label class="chip mood"><input type="radio" name="mood" data-record-field="mood" value="😊"><span title="良い">😊</span></label><label class="chip mood"><input type="radio" name="mood" data-record-field="mood" value="😐"><span title="普通">😐</span></label><label class="chip mood"><input type="radio" name="mood" data-record-field="mood" value="😔"><span title="少し悪い">😔</span></label><label class="chip mood"><input type="radio" name="mood" data-record-field="mood" value="😣"><span title="悪い">😣</span></label>
       </div></div>
       <div class="section-card"><span class="section-title"><i class="question-number">02</i>今日の満足度</span><div class="stars" aria-label="今日の満足度">
-        <input id="star5" type="radio" name="rating"><label for="star5">★</label><input id="star4" type="radio" name="rating"><label for="star4">★</label><input id="star3" type="radio" name="rating"><label for="star3">★</label><input id="star2" type="radio" name="rating"><label for="star2">★</label><input id="star1" type="radio" name="rating"><label for="star1">★</label>
+        <input id="star5" type="radio" name="rating" data-record-field="satisfaction" value="5"><label for="star5">★</label><input id="star4" type="radio" name="rating" data-record-field="satisfaction" value="4"><label for="star4">★</label><input id="star3" type="radio" name="rating" data-record-field="satisfaction" value="3"><label for="star3">★</label><input id="star2" type="radio" name="rating" data-record-field="satisfaction" value="2"><label for="star2">★</label><input id="star1" type="radio" name="rating" data-record-field="satisfaction" value="1"><label for="star1">★</label>
       </div></div>
       <div class="section-card"><span class="section-title"><i class="question-number">03</i>今日、自分なりに頑張ったと思うこと</span><span class="section-subtitle">いくつでも選べます</span><div class="option-grid three">
-        <label class="chip"><input type="checkbox"><span>仕事</span></label><label class="chip"><input type="checkbox"><span>勉強</span></label><label class="chip"><input type="checkbox"><span>運動</span></label><label class="chip"><input type="checkbox"><span>家事</span></label><label class="chip"><input type="checkbox"><span>その他</span></label><label class="chip"><input type="checkbox"><span>思いつかない</span></label>
+        <label class="chip"><input type="checkbox" data-record-field="effort" value="仕事"><span>仕事</span></label><label class="chip"><input type="checkbox" data-record-field="effort" value="勉強"><span>勉強</span></label><label class="chip"><input type="checkbox" data-record-field="effort" value="運動"><span>運動</span></label><label class="chip"><input type="checkbox" data-record-field="effort" value="家事"><span>家事</span></label><label class="chip"><input type="checkbox" data-record-field="effort" value="その他"><span>その他</span></label><label class="chip"><input type="checkbox" data-record-field="effort" value="思いつかない"><span>思いつかない</span></label>
       </div></div>
-      <label class="section-card" style="display:block"><span class="section-title"><i class="question-number">04</i>明日はどんな一歩を踏み出したいですか</span><textarea style="min-height:110px" placeholder="小さな一歩で大丈夫です。"></textarea></label>
-      <div class="actions"><button class="btn btn-primary" data-go="ai-report">AIレポートを生成</button></div>
+      <label class="section-card" style="display:block"><span class="section-title"><i class="question-number">04</i>明日はどんな一歩を踏み出したいですか</span><textarea style="min-height:110px" data-record-field="tomorrowStep" placeholder="小さな一歩で大丈夫です。"></textarea></label>
+      <div class="actions"><button class="btn btn-primary" data-complete-record>AIレポートを生成</button></div>
     </section>
 
     <section class="screen" id="ai-report" aria-labelledby="ai-report-title">
@@ -277,9 +280,173 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
+    const STORAGE_KEY = 'oneStepRecords';
+    const AUTOSAVE_DELAY = 400;
     const screens = [...document.querySelectorAll('.screen')];
     const toast = document.getElementById('toast');
+    const recordFields = [...document.querySelectorAll('[data-record-field]')];
     let toastTimer;
+    let autosaveTimer;
+    let hasPendingAutosave = false;
+    let isHydrating = false;
+    let currentRecord = null;
+
+    /*
+     * LocalStorageへのアクセスはこのオブジェクトに集約しています。
+     * Supabase移行時は、同じ役割の非同期リポジトリへ差し替えられます。
+     */
+    const recordRepository = {
+      getAll() {
+        try {
+          const storedValue = localStorage.getItem(STORAGE_KEY);
+          if (!storedValue) return [];
+          const records = JSON.parse(storedValue);
+          return Array.isArray(records) ? records : [];
+        } catch (error) {
+          console.error('記録の読み込みに失敗しました。', error);
+          return [];
+        }
+      },
+
+      findByDate(date) {
+        return this.getAll().find(record => record.date === date) || null;
+      },
+
+      upsert(record) {
+        try {
+          const records = this.getAll();
+          const recordIndex = records.findIndex(item => item.id === record.id);
+
+          if (recordIndex >= 0) {
+            records[recordIndex] = record;
+          } else {
+            records.push(record);
+          }
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+          return true;
+        } catch (error) {
+          console.error('記録の保存に失敗しました。', error);
+          return false;
+        }
+      }
+    };
+
+    // ブラウザのローカル時刻を記録日として扱います。
+    function getTodayDate() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function generateId() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function formatUpdatedAt(isoDate) {
+      if (!isoDate) return '';
+      const date = new Date(isoDate);
+      if (Number.isNaN(date.getTime())) return '';
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    }
+
+    function updateLastUpdatedDisplay(updatedAt) {
+      const formattedDate = formatUpdatedAt(updatedAt);
+      document.querySelectorAll('[data-last-updated]').forEach(element => {
+        element.textContent = formattedDate ? `最終更新　${formattedDate}` : '';
+      });
+    }
+
+    function getCheckedValues(fieldName) {
+      return [...document.querySelectorAll(`[data-record-field="${fieldName}"]:checked`)]
+        .map(input => input.value);
+    }
+
+    // 2画面に分かれた入力項目を、1件の記録データへまとめます。
+    function collectFormData() {
+      return {
+        actions: getCheckedValues('actions'),
+        todayEvent: document.querySelector('[data-record-field="todayEvent"]').value,
+        diary: document.querySelector('[data-record-field="diary"]').value,
+        mood: document.querySelector('[data-record-field="mood"]:checked')?.value || '',
+        satisfaction: Number(document.querySelector('[data-record-field="satisfaction"]:checked')?.value || 0),
+        effort: getCheckedValues('effort'),
+        tomorrowStep: document.querySelector('[data-record-field="tomorrowStep"]').value
+      };
+    }
+
+    function setCheckedValues(fieldName, values = []) {
+      document.querySelectorAll(`[data-record-field="${fieldName}"]`).forEach(input => {
+        input.checked = values.includes(input.value);
+      });
+    }
+
+    // 保存済みの当日データをフォームへ反映します。
+    function hydrateForm(record) {
+      if (!record) return;
+      isHydrating = true;
+      setCheckedValues('actions', record.actions);
+      setCheckedValues('effort', record.effort);
+      document.querySelector('[data-record-field="todayEvent"]').value = record.todayEvent || '';
+      document.querySelector('[data-record-field="diary"]').value = record.diary || '';
+      document.querySelector('[data-record-field="tomorrowStep"]').value = record.tomorrowStep || '';
+
+      const moodInput = [...document.querySelectorAll('[data-record-field="mood"]')]
+        .find(input => input.value === record.mood);
+      if (moodInput) moodInput.checked = true;
+
+      const satisfactionInput = [...document.querySelectorAll('[data-record-field="satisfaction"]')]
+        .find(input => Number(input.value) === Number(record.satisfaction));
+      if (satisfactionInput) satisfactionInput.checked = true;
+
+      updateLastUpdatedDisplay(record.updatedAt);
+      isHydrating = false;
+    }
+
+    // status指定がない自動保存では、現在のステータスを維持します。
+    function saveRecord(statusOverride = null) {
+      const now = new Date().toISOString();
+      const record = {
+        id: currentRecord?.id || generateId(),
+        date: currentRecord?.date || getTodayDate(),
+        ...collectFormData(),
+        status: statusOverride || currentRecord?.status || 'draft',
+        createdAt: currentRecord?.createdAt || now,
+        updatedAt: now
+      };
+
+      if (!recordRepository.upsert(record)) {
+        showToast('保存できませんでした。ブラウザの設定をご確認ください');
+        return false;
+      }
+
+      currentRecord = record;
+      updateLastUpdatedDisplay(record.updatedAt);
+      hasPendingAutosave = false;
+      return true;
+    }
+
+    function scheduleAutosave() {
+      if (isHydrating) return;
+      clearTimeout(autosaveTimer);
+      hasPendingAutosave = true;
+      autosaveTimer = setTimeout(() => saveRecord(), AUTOSAVE_DELAY);
+    }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
 
     function showScreen(id, addHistory = true) {
       const target = document.getElementById(id);
@@ -290,15 +457,26 @@
     }
 
     document.addEventListener('click', event => {
+      const draftButton = event.target.closest('[data-save-draft]');
+      if (draftButton) {
+        clearTimeout(autosaveTimer);
+        if (saveRecord('draft')) showToast('下書きを保存しました');
+        return;
+      }
+
+      const completeButton = event.target.closest('[data-complete-record]');
+      if (completeButton) {
+        clearTimeout(autosaveTimer);
+        if (saveRecord('completed')) showScreen('ai-report');
+        return;
+      }
+
       const nav = event.target.closest('[data-go]');
       if (nav) showScreen(nav.dataset.go);
 
       const dummy = event.target.closest('[data-dummy]');
       if (dummy) {
-        clearTimeout(toastTimer);
-        toast.textContent = `${dummy.dataset.dummy}はPhase 1ではダミーです`;
-        toast.classList.add('show');
-        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        showToast(`${dummy.dataset.dummy}は現在ダミーです`);
       }
 
       const period = event.target.closest('.period-card');
@@ -308,7 +486,22 @@
       }
     });
 
+    recordFields.forEach(field => {
+      field.addEventListener('input', scheduleAutosave);
+      field.addEventListener('change', scheduleAutosave);
+    });
+
+    // ページを閉じる直前に、待機中の入力があれば同期的に保存します。
+    window.addEventListener('pagehide', () => {
+      if (hasPendingAutosave) {
+        clearTimeout(autosaveTimer);
+        saveRecord();
+      }
+    });
+
     window.addEventListener('popstate', event => showScreen(event.state?.screen || location.hash.slice(1) || 'home', false));
+    currentRecord = recordRepository.findByDate(getTodayDate());
+    hydrateForm(currentRecord);
     const initial = document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
     history.replaceState({ screen: initial }, '', initial === 'home' ? location.pathname : `#${initial}`);
     showScreen(initial, false);
