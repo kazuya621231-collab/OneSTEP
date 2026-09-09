@@ -82,6 +82,10 @@
     .home-note { margin: 0; color: var(--muted); font-size: 13px; }
 
     .home-menu { display: grid; gap: 14px; margin-top: 52px; }
+    .gemini-test { margin-top: 18px; }
+    .gemini-test .btn:disabled { opacity: .65; cursor: wait; }
+    .gemini-test-result { display: none; margin: 12px 0 0; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); color: var(--muted); font-size: 13px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+    .gemini-test-result.visible { display: block; }
 
     .menu-card {
       width: 100%;
@@ -218,6 +222,10 @@
         <button class="menu-card" data-go="reports"><span class="menu-icon">▥</span><span class="menu-copy"><strong>レポート</strong><small>これまでの歩みを見る</small></span><span class="arrow">›</span></button>
         <button class="menu-card" data-go="import"><span class="menu-icon">＋</span><span class="menu-copy"><strong>日記を取り込む</strong><small>過去の日記をまとめて追加</small></span><span class="arrow">›</span></button>
       </nav>
+      <div class="gemini-test">
+        <button class="btn btn-ghost" id="gemini-test-button" type="button">Gemini接続テスト</button>
+        <p class="gemini-test-result" id="gemini-test-result" role="status" aria-live="polite"></p>
+      </div>
     </section>
 
     <section class="screen" id="record-step1" aria-labelledby="step1-title">
@@ -471,6 +479,28 @@
       toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
+    async function testGeminiConnection() {
+      const button = document.getElementById('gemini-test-button');
+      const result = document.getElementById('gemini-test-result');
+      button.disabled = true;
+      result.textContent = 'AIと通信中...';
+      result.classList.add('visible');
+
+      try {
+        const response = await fetch('/api/gemini-test', { method: 'POST' });
+        if (!response.ok) throw new Error(`Gemini test request failed: ${response.status}`);
+
+        const data = await response.json();
+        if (!data.reply) throw new Error('Gemini response did not include a reply.');
+        result.textContent = data.reply;
+      } catch (error) {
+        console.error('[Gemini接続テスト] 通信エラー:', error);
+        result.textContent = 'Geminiとの通信に失敗しました。\n\n時間をおいてもう一度お試しください。';
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     function truncateText(text, maxLength = 40) {
       const characters = Array.from(text || '');
       if (!characters.length) return '自由記述はありません';
@@ -600,6 +630,11 @@
     }
 
     document.addEventListener('click', event => {
+      if (event.target.closest('#gemini-test-button')) {
+        testGeminiConnection();
+        return;
+      }
+
       const recordCard = event.target.closest('[data-record-id]');
       if (recordCard) {
         renderRecordDetail(recordCard.dataset.recordId);
