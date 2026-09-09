@@ -183,9 +183,17 @@
     .period-card.active { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px rgba(50,107,103,.16); }
     .list-heading { margin: 0 0 14px; font-size: 16px; }
     .record-list { display: grid; gap: 11px; }
-    .record { padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
-    .record-date { margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+    .record { width: 100%; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .18s, box-shadow .18s; }
+    .record:active { transform: scale(.985); box-shadow: 0 5px 15px rgba(41,72,68,.06); }
+    .record-date { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+    .record-date .arrow { line-height: 1; }
     .record p { margin: 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .empty-records { padding: 36px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--muted); font-size: 14px; text-align: center; }
+    .detail-date { margin: -11px 0 25px; color: var(--primary-dark); font-size: 20px; font-weight: 750; text-align: center; }
+    .detail-value { margin: 0; color: #566462; font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .detail-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .detail-tag { padding: 8px 12px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); font-size: 13px; font-weight: 700; }
+    .detail-mood { font-size: 25px; line-height: 1; }
 
     .import-info { padding: 21px; margin-bottom: 17px; border-radius: 20px; background: var(--surface-soft); color: #47615e; font-size: 14px; line-height: 1.9; }
     .toast { position: fixed; z-index: 20; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); width: max-content; max-width: calc(100% - 44px); padding: 13px 18px; border-radius: 14px; background: #243634; color: white; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; box-shadow: var(--shadow); }
@@ -264,10 +272,16 @@
 
     <section class="screen" id="reports" aria-labelledby="reports-title">
       <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="reports-title">レポート</h1><span></span></header>
-      <p class="updated">最終更新　2026/09/06 14:30</p>
+      <p class="updated" id="reports-updated"></p>
       <div class="period-grid" aria-label="表示期間"><button class="period-card active">今日</button><button class="period-card">今週</button><button class="period-card">今月</button><button class="period-card">期間指定</button></div>
       <h2 class="list-heading">保存された記録一覧</h2>
-      <div class="record-list"><article class="record"><div class="record-date">2026/09/06　😊</div><p>今日は後輩の相談に…</p></article><article class="record"><div class="record-date">2026/09/05　🙂</div><p>勉強を続け…</p></article><article class="record"><div class="record-date">2026/09/04　😐</div><p>少し疲れて…</p></article></div>
+      <div class="record-list" id="record-list"></div>
+    </section>
+
+    <section class="screen" id="record-detail" aria-labelledby="record-detail-title">
+      <header class="topbar"><button class="back" data-go="reports" aria-label="レポート一覧へ戻る">‹</button><h1 id="record-detail-title">記録の詳細</h1><span></span></header>
+      <p class="detail-date" id="detail-date"></p>
+      <div id="detail-content"></div>
     </section>
 
     <section class="screen" id="import" aria-labelledby="import-title">
@@ -310,6 +324,10 @@
 
       findByDate(date) {
         return this.getAll().find(record => record.date === date) || null;
+      },
+
+      findById(id) {
+        return this.getAll().find(record => record.id === id) || null;
       },
 
       upsert(record) {
@@ -356,6 +374,11 @@
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}/${month}/${day} ${hours}:${minutes}`;
+    }
+
+    function formatRecordDate(dateString) {
+      if (!dateString) return '日付なし';
+      return dateString.replaceAll('-', '/');
     }
 
     function updateLastUpdatedDisplay(updatedAt) {
@@ -448,15 +471,142 @@
       toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
+    function truncateText(text, maxLength = 40) {
+      const characters = Array.from(text || '');
+      if (!characters.length) return '自由記述はありません';
+      return characters.length > maxLength
+        ? `${characters.slice(0, maxLength).join('')}…`
+        : characters.join('');
+    }
+
+    // LocalStorageの記録を日付降順で一覧へ描画します。
+    function renderRecordList() {
+      const recordList = document.getElementById('record-list');
+      const reportsUpdated = document.getElementById('reports-updated');
+      const records = recordRepository.getAll().sort((a, b) => {
+        const dateComparison = String(b.date || '').localeCompare(String(a.date || ''));
+        return dateComparison || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
+      });
+
+      recordList.replaceChildren();
+
+      if (!records.length) {
+        const emptyMessage = document.createElement('p');
+        emptyMessage.className = 'empty-records';
+        emptyMessage.textContent = 'まだ記録がありません';
+        recordList.append(emptyMessage);
+        reportsUpdated.textContent = '';
+        return;
+      }
+
+      const latestRecord = [...records].sort((a, b) =>
+        String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
+      )[0];
+      const latestUpdatedAt = formatUpdatedAt(latestRecord?.updatedAt);
+      reportsUpdated.textContent = latestUpdatedAt ? `最終更新　${latestUpdatedAt}` : '';
+
+      records.forEach(record => {
+        const card = document.createElement('button');
+        const heading = document.createElement('span');
+        const headingText = document.createElement('span');
+        const arrow = document.createElement('span');
+        const excerpt = document.createElement('p');
+
+        card.type = 'button';
+        card.className = 'record';
+        card.dataset.recordId = record.id;
+        card.setAttribute('aria-label', `${formatRecordDate(record.date)}の記録を開く`);
+        heading.className = 'record-date';
+        headingText.textContent = `${formatRecordDate(record.date)}　${record.mood || '—'}`;
+        arrow.className = 'arrow';
+        arrow.textContent = '›';
+        excerpt.textContent = truncateText(record.diary);
+
+        heading.append(headingText, arrow);
+        card.append(heading, excerpt);
+        recordList.append(card);
+      });
+    }
+
+    function createDetailSection(label, value, type = 'text') {
+      const section = document.createElement('section');
+      const heading = document.createElement('h2');
+      section.className = 'section-card';
+      heading.className = 'section-title';
+      heading.textContent = label;
+      section.append(heading);
+
+      if (type === 'tags') {
+        const tags = document.createElement('div');
+        tags.className = 'detail-tags';
+        const values = Array.isArray(value) && value.length ? value : ['未入力'];
+        values.forEach(item => {
+          const tag = document.createElement('span');
+          tag.className = 'detail-tag';
+          tag.textContent = item;
+          tags.append(tag);
+        });
+        section.append(tags);
+        return section;
+      }
+
+      const paragraph = document.createElement('p');
+      paragraph.className = type === 'mood' ? 'detail-value detail-mood' : 'detail-value';
+      paragraph.textContent = value || '未入力';
+      section.append(paragraph);
+      return section;
+    }
+
+    // 選択された1件の全入力内容を、安全にテキストとして表示します。
+    function renderRecordDetail(recordId) {
+      const record = recordRepository.findById(recordId);
+      const detailDate = document.getElementById('detail-date');
+      const detailContent = document.getElementById('detail-content');
+      detailContent.replaceChildren();
+
+      if (!record) {
+        detailDate.textContent = '';
+        const notFound = document.createElement('p');
+        notFound.className = 'empty-records';
+        notFound.textContent = '記録が見つかりません';
+        detailContent.append(notFound);
+        return;
+      }
+
+      detailDate.textContent = formatRecordDate(record.date);
+      const satisfaction = Number(record.satisfaction);
+      const satisfactionText = satisfaction > 0
+        ? `${'★'.repeat(Math.min(satisfaction, 5))}${'☆'.repeat(Math.max(5 - satisfaction, 0))}（${satisfaction}/5）`
+        : '未入力';
+
+      detailContent.append(
+        createDetailSection('行動チェック', record.actions, 'tags'),
+        createDetailSection('今日だけの出来事', record.todayEvent),
+        createDetailSection('自由記述', record.diary),
+        createDetailSection('気分', record.mood, 'mood'),
+        createDetailSection('満足度', satisfactionText),
+        createDetailSection('頑張ったこと', record.effort, 'tags'),
+        createDetailSection('明日の一歩', record.tomorrowStep)
+      );
+    }
+
     function showScreen(id, addHistory = true) {
       const target = document.getElementById(id);
       if (!target) return;
+      if (id === 'reports') renderRecordList();
       screens.forEach(screen => screen.classList.toggle('active', screen === target));
       window.scrollTo({ top: 0, behavior: 'instant' });
       if (addHistory) history.pushState({ screen: id }, '', `#${id}`);
     }
 
     document.addEventListener('click', event => {
+      const recordCard = event.target.closest('[data-record-id]');
+      if (recordCard) {
+        renderRecordDetail(recordCard.dataset.recordId);
+        showScreen('record-detail');
+        return;
+      }
+
       const draftButton = event.target.closest('[data-save-draft]');
       if (draftButton) {
         clearTimeout(autosaveTimer);
