@@ -482,19 +482,55 @@
     async function testGeminiConnection() {
       const button = document.getElementById('gemini-test-button');
       const result = document.getElementById('gemini-test-result');
+      const endpoint = '/api/gemini';
       button.disabled = true;
       result.textContent = 'AIと通信中...';
       result.classList.add('visible');
 
       try {
-        const response = await fetch('/api/gemini-test', { method: 'POST' });
-        if (!response.ok) throw new Error(`Gemini test request failed: ${response.status}`);
+        console.info('[Gemini接続テスト] リクエスト開始', { endpoint });
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          cache: 'no-store'
+        });
+        const responseText = await response.text();
+        let data = {};
 
-        const data = await response.json();
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          console.error('[Gemini接続テスト] JSON以外のレスポンスを受信しました', {
+            endpoint,
+            status: response.status,
+            contentType: response.headers.get('content-type'),
+            bodyPreview: responseText.slice(0, 300),
+            parseError
+          });
+          throw new Error(`API response was not JSON (${response.status})`);
+        }
+
+        if (!response.ok) {
+          console.error('[Gemini接続テスト] APIエラー', {
+            endpoint,
+            status: response.status,
+            statusText: response.statusText,
+            requestId: data.requestId,
+            code: data.code,
+            error: data.error
+          });
+          throw new Error(`Gemini API failed: ${response.status} ${data.code || ''}`.trim());
+        }
+
         if (!data.reply) throw new Error('Gemini response did not include a reply.');
+        console.info('[Gemini接続テスト] 通信成功', {
+          endpoint,
+          requestId: data.requestId,
+          model: data.model
+        });
         result.textContent = data.reply;
       } catch (error) {
-        console.error('[Gemini接続テスト] 通信エラー:', error);
+        console.error('[Gemini接続テスト] 通信に失敗しました', { endpoint, error });
         result.textContent = 'Geminiとの通信に失敗しました。\n\n時間をおいてもう一度お試しください。';
       } finally {
         button.disabled = false;
