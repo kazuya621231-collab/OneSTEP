@@ -487,6 +487,9 @@
       result.textContent = 'AIと通信中...';
       result.classList.add('visible');
 
+      let responseStatus = null;
+      let responseData = {};
+
       try {
         console.info('[Gemini接続テスト] リクエスト開始', { endpoint });
         const response = await fetch(endpoint, {
@@ -494,11 +497,13 @@
           headers: { Accept: 'application/json' },
           cache: 'no-store'
         });
+        responseStatus = response.status;
         const responseText = await response.text();
         let data = {};
 
         try {
           data = responseText ? JSON.parse(responseText) : {};
+          responseData = data;
         } catch (parseError) {
           console.error('[Gemini接続テスト] JSON以外のレスポンスを受信しました', {
             endpoint,
@@ -507,6 +512,10 @@
             bodyPreview: responseText.slice(0, 300),
             parseError
           });
+          responseData = {
+            error: 'APIからJSON以外のレスポンスが返されました。',
+            geminiMessage: responseText.slice(0, 300) || 'レスポンス本文なし'
+          };
           throw new Error(`API response was not JSON (${response.status})`);
         }
 
@@ -530,8 +539,27 @@
         });
         result.textContent = data.reply;
       } catch (error) {
-        console.error('[Gemini接続テスト] 通信に失敗しました', { endpoint, error });
-        result.textContent = 'Geminiとの通信に失敗しました。\n\n時間をおいてもう一度お試しください。';
+        const displayedStatus = responseData.httpStatus || responseStatus || '取得できませんでした';
+        const displayedError = responseData.error || error.message || '不明なエラー';
+        const displayedRequestId = responseData.requestId || '取得できませんでした';
+        const displayedGeminiMessage = responseData.geminiMessage || '取得できませんでした';
+
+        console.error('[Gemini接続テスト] 通信に失敗しました', {
+          endpoint,
+          httpStatus: displayedStatus,
+          error: displayedError,
+          requestId: displayedRequestId,
+          geminiMessage: displayedGeminiMessage,
+          originalError: error
+        });
+        result.textContent = [
+          'Geminiとの通信に失敗しました。',
+          '',
+          `HTTPステータス: ${displayedStatus}`,
+          `エラー内容: ${displayedError}`,
+          `requestId: ${displayedRequestId}`,
+          `Geminiメッセージ: ${displayedGeminiMessage}`
+        ].join('\n');
       } finally {
         button.disabled = false;
       }
