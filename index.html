@@ -82,11 +82,6 @@
     .home-note { margin: 0; color: var(--muted); font-size: 13px; }
 
     .home-menu { display: grid; gap: 14px; margin-top: 52px; }
-    .gemini-test { margin-top: 18px; }
-    .gemini-test .btn:disabled { opacity: .65; cursor: wait; }
-    .gemini-test-result { display: none; margin: 12px 0 0; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); color: var(--muted); font-size: 13px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
-    .gemini-test-result.visible { display: block; }
-
     .menu-card {
       width: 100%;
       min-height: 104px;
@@ -180,6 +175,16 @@
     .report-item::before { counter-increment: report; content: counter(report, decimal-leading-zero); color: var(--primary); font-size: 12px; letter-spacing: .06em; }
     .report-item h3 { margin: -2px 0 9px; font-size: 15px; }
     .report-item p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.8; }
+    .ai-report-content { padding: 22px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--muted); font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+    .ai-report-content h2 { margin: 25px 0 9px; color: var(--text); font-size: 17px; }
+    .ai-report-content h2:first-child { margin-top: 0; }
+    .ai-report-content h3 { margin: 21px 0 8px; color: var(--text); font-size: 15px; }
+    .ai-report-content p { margin: 0 0 12px; white-space: pre-wrap; }
+    .ai-report-content ul, .ai-report-content ol { margin: 0 0 14px; padding-left: 1.5em; }
+    .ai-report-content li { margin-bottom: 5px; }
+    .ai-report-content.is-loading { color: var(--primary); text-align: center; }
+    .ai-report-content.is-error { color: #9a4b45; white-space: pre-line; }
+    [data-complete-record]:disabled { opacity: .65; cursor: wait; }
 
     .updated { margin: -13px 0 25px; color: var(--muted); font-size: 12px; text-align: center; }
     .period-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; margin-bottom: 31px; }
@@ -222,10 +227,6 @@
         <button class="menu-card" data-go="reports"><span class="menu-icon">▥</span><span class="menu-copy"><strong>レポート</strong><small>これまでの歩みを見る</small></span><span class="arrow">›</span></button>
         <button class="menu-card" data-go="import"><span class="menu-icon">＋</span><span class="menu-copy"><strong>日記を取り込む</strong><small>過去の日記をまとめて追加</small></span><span class="arrow">›</span></button>
       </nav>
-      <div class="gemini-test">
-        <button class="btn btn-ghost" id="gemini-test-button" type="button">Gemini接続テスト</button>
-        <p class="gemini-test-result" id="gemini-test-result" role="status" aria-live="polite"></p>
-      </div>
     </section>
 
     <section class="screen" id="record-step1" aria-labelledby="step1-title">
@@ -268,13 +269,7 @@
     <section class="screen" id="ai-report" aria-labelledby="ai-report-title">
       <header class="topbar"><button class="back" data-go="record-step2" aria-label="前の画面へ戻る">‹</button><h1>AIレポート</h1><span></span></header>
       <div class="report-hero"><span class="spark">✦</span><h2 id="ai-report-title">今日も、おつかれさまでした。</h2><p>あなたの一日から、AIが見つけた頑張りをお届けします。</p></div>
-      <div class="report-sections">
-        <article class="report-item"><div><h3>今日の総評</h3><p>忙しい一日の中でも、目の前のことに丁寧に向き合えた一日でした。小さな積み重ねを大切にできています。</p></div></article>
-        <article class="report-item"><div><h3>客観的評価</h3><p>予定していたことだけでなく、周りへの気配りにも時間を使えています。自分が思う以上に、多くの役割を果たしました。</p></div></article>
-        <article class="report-item"><div><h3>今日見えた傾向</h3><p>誰かのために動いたことは自然に受け止め、自分の頑張りとして数えない傾向があります。その行動も、十分に価値のある頑張りです。</p></div></article>
-        <article class="report-item"><div><h3>成長したこと</h3><p>慌ただしい場面でも、気持ちを切り替えて行動できました。状況に合わせて一歩ずつ進める力が育っています。</p></div></article>
-        <article class="report-item"><div><h3>明日の一歩</h3><p>明日は、朝にやることをひとつだけ決めてみましょう。小さく始めることが、心に余裕をつくる一歩になります。</p></div></article>
-      </div>
+      <div class="ai-report-content" id="ai-report-content" role="status" aria-live="polite">AIレポートを生成すると、ここに表示されます。</div>
       <div class="actions"><button class="btn btn-primary" data-go="home">ホームへ戻る</button><button class="btn btn-secondary" data-go="reports">レポートを見る</button></div>
     </section>
 
@@ -414,6 +409,23 @@
       };
     }
 
+    // AIプロフィール画面は今後追加予定。既存キーがあれば利用し、未設定でも生成できます。
+    function getAiProfile() {
+      try {
+        const storedProfile = localStorage.getItem('oneStepAiProfile');
+        if (!storedProfile) return '未設定';
+        try {
+          const parsed = JSON.parse(storedProfile);
+          return typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+        } catch {
+          return storedProfile;
+        }
+      } catch (error) {
+        console.error('AIプロフィールの読み込みに失敗しました。', error);
+        return '未設定';
+      }
+    }
+
     function setCheckedValues(fieldName, values = []) {
       document.querySelectorAll(`[data-record-field="${fieldName}"]`).forEach(input => {
         input.checked = values.includes(input.value);
@@ -449,6 +461,7 @@
         id: currentRecord?.id || generateId(),
         date: currentRecord?.date || getTodayDate(),
         ...collectFormData(),
+        aiReport: currentRecord?.aiReport || '',
         status: statusOverride || currentRecord?.status || 'draft',
         createdAt: currentRecord?.createdAt || now,
         updatedAt: now
@@ -479,22 +492,94 @@
       toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
-    async function testGeminiConnection() {
-      const button = document.getElementById('gemini-test-button');
-      const result = document.getElementById('gemini-test-result');
+    function appendInlineMarkdown(element, text) {
+      const parts = text.split(/(\*\*[^*]+\*\*)/g);
+      parts.forEach(part => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const strong = document.createElement('strong');
+          strong.textContent = part.slice(2, -2);
+          element.append(strong);
+        } else {
+          element.append(document.createTextNode(part));
+        }
+      });
+    }
+
+    // GeminiのMarkdownを安全なDOMへ変換し、見出しと箇条書きを維持します。
+    function renderMarkdown(markdown) {
+      const result = document.getElementById('ai-report-content');
+      result.replaceChildren();
+      result.className = 'ai-report-content';
+      let list = null;
+
+      String(markdown || '').split(/\r?\n/).forEach(line => {
+        const heading = line.match(/^(#{2,3})\s+(.+)$/);
+        const bullet = line.match(/^[-*]\s+(.+)$/);
+
+        if (heading) {
+          list = null;
+          const node = document.createElement(heading[1].length === 2 ? 'h2' : 'h3');
+          appendInlineMarkdown(node, heading[2]);
+          result.append(node);
+        } else if (bullet) {
+          if (!list) {
+            list = document.createElement('ul');
+            result.append(list);
+          }
+          const item = document.createElement('li');
+          appendInlineMarkdown(item, bullet[1]);
+          list.append(item);
+        } else if (line.trim()) {
+          list = null;
+          const paragraph = document.createElement('p');
+          appendInlineMarkdown(paragraph, line);
+          result.append(paragraph);
+        }
+      });
+    }
+
+    function saveGeneratedReport(aiReport) {
+      const now = new Date().toISOString();
+      const record = {
+        ...(currentRecord || {}),
+        id: currentRecord?.id || generateId(),
+        date: currentRecord?.date || getTodayDate(),
+        ...collectFormData(),
+        aiReport,
+        status: 'completed',
+        createdAt: currentRecord?.createdAt || now,
+        updatedAt: now
+      };
+
+      if (!recordRepository.upsert(record)) return false;
+      currentRecord = record;
+      updateLastUpdatedDisplay(now);
+      return true;
+    }
+
+    async function generateAiReport() {
+      const button = document.querySelector('[data-complete-record]');
+      const result = document.getElementById('ai-report-content');
       const endpoint = '/api/gemini';
       button.disabled = true;
-      result.textContent = 'AIと通信中...';
-      result.classList.add('visible');
+      showScreen('ai-report');
+      result.className = 'ai-report-content is-loading';
+      result.textContent = 'AIが分析中です…';
 
       let responseStatus = null;
       let responseData = {};
 
       try {
-        console.info('[Gemini接続テスト] リクエスト開始', { endpoint });
+        const input = {
+          aiProfile: getAiProfile(),
+          date: currentRecord?.date || getTodayDate(),
+          ...collectFormData()
+        };
+        console.info('[AIレポート生成] リクエスト開始', { endpoint, date: input.date });
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: { Accept: 'application/json' },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(input),
           cache: 'no-store'
         });
         responseStatus = response.status;
@@ -505,7 +590,7 @@
           data = responseText ? JSON.parse(responseText) : {};
           responseData = data;
         } catch (parseError) {
-          console.error('[Gemini接続テスト] JSON以外のレスポンスを受信しました', {
+          console.error('[AIレポート生成] JSON以外のレスポンスを受信しました', {
             endpoint,
             status: response.status,
             contentType: response.headers.get('content-type'),
@@ -520,7 +605,7 @@
         }
 
         if (!response.ok) {
-          console.error('[Gemini接続テスト] APIエラー', {
+          console.error('[AIレポート生成] APIエラー', {
             endpoint,
             status: response.status,
             statusText: response.statusText,
@@ -532,34 +617,28 @@
         }
 
         if (!data.reply) throw new Error('Gemini response did not include a reply.');
-        console.info('[Gemini接続テスト] 通信成功', {
+        console.info('[AIレポート生成] 通信成功', {
           endpoint,
           requestId: data.requestId,
           model: data.model
         });
-        result.textContent = data.reply;
+        if (!saveGeneratedReport(data.reply)) {
+          throw new Error('生成したAIレポートを保存できませんでした。');
+        }
+        renderMarkdown(data.reply);
       } catch (error) {
-        const displayedStatus = responseData.httpStatus || responseStatus || '取得できませんでした';
-        const displayedError = responseData.error || error.message || '不明なエラー';
         const displayedRequestId = responseData.requestId || '取得できませんでした';
-        const displayedGeminiMessage = responseData.geminiMessage || '取得できませんでした';
 
-        console.error('[Gemini接続テスト] 通信に失敗しました', {
+        console.error('[AIレポート生成] 失敗しました', {
           endpoint,
-          httpStatus: displayedStatus,
-          error: displayedError,
+          httpStatus: responseData.httpStatus || responseStatus,
+          error: responseData.error || error.message,
           requestId: displayedRequestId,
-          geminiMessage: displayedGeminiMessage,
+          geminiMessage: responseData.geminiMessage,
           originalError: error
         });
-        result.textContent = [
-          'Geminiとの通信に失敗しました。',
-          '',
-          `HTTPステータス: ${displayedStatus}`,
-          `エラー内容: ${displayedError}`,
-          `requestId: ${displayedRequestId}`,
-          `Geminiメッセージ: ${displayedGeminiMessage}`
-        ].join('\n');
+        result.className = 'ai-report-content is-error';
+        result.textContent = `AIレポートの生成に失敗しました\nrequestId: ${displayedRequestId}`;
       } finally {
         button.disabled = false;
       }
@@ -680,7 +759,8 @@
         createDetailSection('気分', record.mood, 'mood'),
         createDetailSection('満足度', satisfactionText),
         createDetailSection('頑張ったこと', record.effort, 'tags'),
-        createDetailSection('明日の一歩', record.tomorrowStep)
+        createDetailSection('明日の一歩', record.tomorrowStep),
+        createDetailSection('今日のAIレポート', record.aiReport)
       );
     }
 
@@ -688,17 +768,13 @@
       const target = document.getElementById(id);
       if (!target) return;
       if (id === 'reports') renderRecordList();
+      if (id === 'ai-report' && currentRecord?.aiReport) renderMarkdown(currentRecord.aiReport);
       screens.forEach(screen => screen.classList.toggle('active', screen === target));
       window.scrollTo({ top: 0, behavior: 'instant' });
       if (addHistory) history.pushState({ screen: id }, '', `#${id}`);
     }
 
     document.addEventListener('click', event => {
-      if (event.target.closest('#gemini-test-button')) {
-        testGeminiConnection();
-        return;
-      }
-
       const recordCard = event.target.closest('[data-record-id]');
       if (recordCard) {
         renderRecordDetail(recordCard.dataset.recordId);
@@ -716,7 +792,7 @@
       const completeButton = event.target.closest('[data-complete-record]');
       if (completeButton) {
         clearTimeout(autosaveTimer);
-        if (saveRecord('completed')) showScreen('ai-report');
+        if (saveRecord('draft')) generateAiReport();
         return;
       }
 
