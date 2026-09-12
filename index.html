@@ -82,6 +82,11 @@
     .home-note { margin: 0; color: var(--muted); font-size: 13px; }
 
     .home-menu { display: grid; gap: 14px; margin-top: 52px; }
+    .home-stats + .home-menu { margin-top: 24px; }
+    .home-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 28px; }
+    .stat-card { padding: 15px 7px; border: 1px solid rgba(50,107,103,.08); border-radius: 17px; background: var(--surface); box-shadow: 0 7px 20px rgba(41,72,68,.05); text-align: center; }
+    .stat-card strong { display: block; color: var(--primary-dark); font-size: 19px; line-height: 1.25; }
+    .stat-card small { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; }
     .menu-card {
       width: 100%;
       min-height: 104px;
@@ -184,11 +189,17 @@
     .ai-report-content li { margin-bottom: 5px; }
     .ai-report-content.is-loading { color: var(--primary); text-align: center; }
     .ai-report-content.is-error { color: #9a4b45; white-space: pre-line; }
+    .loading-orbit { position: relative; width: 52px; height: 52px; margin: 4px auto 19px; border: 3px solid var(--primary-light); border-top-color: var(--primary); border-radius: 50%; animation: spin .9s linear infinite; }
+    .loading-orbit::after { content: "✦"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--primary); font-size: 17px; animation: counter-spin .9s linear infinite; }
+    .loading-message { margin: 0; min-height: 27px; color: var(--primary-dark); font-weight: 700; }
+    .retry-button { margin-top: 17px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes counter-spin { to { transform: rotate(-360deg); } }
     [data-complete-record]:disabled { opacity: .65; cursor: wait; }
 
     .updated { margin: -13px 0 25px; color: var(--muted); font-size: 12px; text-align: center; }
-    .period-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; margin-bottom: 31px; }
-    .period-card { min-height: 84px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; }
+    .period-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 20px; }
+    .period-card { min-height: 62px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; }
     .period-card.active { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px rgba(50,107,103,.16); }
     .list-heading { margin: 0 0 14px; font-size: 16px; }
     .record-list { display: grid; gap: 11px; }
@@ -196,7 +207,14 @@
     .record:active { transform: scale(.985); box-shadow: 0 5px 15px rgba(41,72,68,.06); }
     .record-date { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: 13px; font-weight: 750; }
     .record-date .arrow { line-height: 1; }
+    .record-title { display: block; margin-bottom: 8px; color: var(--text); font-size: 15px; font-weight: 750; }
+    .record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+    .record-rating { color: var(--accent); font-size: 13px; letter-spacing: 1px; }
+    .record-category { padding: 4px 8px; border-radius: 8px; background: var(--primary-light); color: var(--primary-dark); font-size: 10px; font-weight: 700; }
     .record p { margin: 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .period-report { margin-bottom: 28px; }
+    .period-report[hidden] { display: none; }
+    .period-report-heading { margin: 0 0 12px; font-size: 16px; }
     .empty-records { padding: 36px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--muted); font-size: 14px; text-align: center; }
     .detail-date { margin: -11px 0 25px; color: var(--primary-dark); font-size: 20px; font-weight: 750; text-align: center; }
     .detail-value { margin: 0; color: #566462; font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -222,6 +240,11 @@
       <h1 class="brand" id="home-title">OneSTEP</h1>
       <p class="tagline">あなたの頑張りを、<br>AIが見つける。</p>
       <p class="home-note">今日をやさしく振り返り、明日への一歩へ。</p>
+      <div class="home-stats" aria-label="記録状況">
+        <div class="stat-card"><strong id="streak-count">0日</strong><small>連続記録日数</small></div>
+        <div class="stat-card"><strong id="total-count">0件</strong><small>累計記録数</small></div>
+        <div class="stat-card"><strong id="latest-date">—</strong><small>最新記録日</small></div>
+      </div>
       <nav class="home-menu" aria-label="メインメニュー">
         <button class="menu-card" data-go="record-step1"><span class="menu-icon">✎</span><span class="menu-copy"><strong>今日の記録</strong><small>寝る前5分の振り返り</small></span><span class="arrow">›</span></button>
         <button class="menu-card" data-go="reports"><span class="menu-icon">▥</span><span class="menu-copy"><strong>レポート</strong><small>これまでの歩みを見る</small></span><span class="arrow">›</span></button>
@@ -276,7 +299,11 @@
     <section class="screen" id="reports" aria-labelledby="reports-title">
       <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="reports-title">レポート</h1><span></span></header>
       <p class="updated" id="reports-updated"></p>
-      <div class="period-grid" aria-label="表示期間"><button class="period-card active">今日</button><button class="period-card">今週</button><button class="period-card">今月</button><button class="period-card">期間指定</button></div>
+      <div class="period-grid" aria-label="表示期間"><button class="period-card active" data-period="daily">今日</button><button class="period-card" data-period="weekly">今週</button><button class="period-card" data-period="monthly">今月</button></div>
+      <section class="period-report" id="period-report">
+        <h2 class="period-report-heading" id="period-report-heading">今日のAIレポート</h2>
+        <div class="ai-report-content" id="period-report-content" aria-live="polite"></div>
+      </section>
       <h2 class="list-heading">保存された記録一覧</h2>
       <div class="record-list" id="record-list"></div>
     </section>
@@ -299,6 +326,14 @@
   <script>
     const STORAGE_KEY = 'oneStepRecords';
     const AUTOSAVE_DELAY = 400;
+    const REPORT_TIMEOUT = 45000;
+    const ANALYSIS_MESSAGES = [
+      '今日の頑張りを整理しています…',
+      'AIが成長ポイントを探しています…',
+      'あなたらしさを分析しています…',
+      '明日の一歩を考えています…',
+      '過去の記録と比較しています…'
+    ];
     const screens = [...document.querySelectorAll('.screen')];
     const toast = document.getElementById('toast');
     const recordFields = [...document.querySelectorAll('[data-record-field]')];
@@ -307,6 +342,9 @@
     let hasPendingAutosave = false;
     let isHydrating = false;
     let currentRecord = null;
+    let currentPeriod = 'daily';
+    let lastReportRequest = null;
+    const reportControllers = new WeakMap();
 
     /*
      * LocalStorageへのアクセスはこのオブジェクトに集約しています。
@@ -462,6 +500,7 @@
         date: currentRecord?.date || getTodayDate(),
         ...collectFormData(),
         aiReport: currentRecord?.aiReport || '',
+        aiTitle: currentRecord?.aiTitle || '',
         status: statusOverride || currentRecord?.status || 'draft',
         createdAt: currentRecord?.createdAt || now,
         updatedAt: now
@@ -506,39 +545,53 @@
     }
 
     // GeminiのMarkdownを安全なDOMへ変換し、見出しと箇条書きを維持します。
-    function renderMarkdown(markdown) {
-      const result = document.getElementById('ai-report-content');
-      result.replaceChildren();
-      result.className = 'ai-report-content';
+    function renderMarkdown(markdown, target = document.getElementById('ai-report-content')) {
+      target.replaceChildren();
+      target.className = 'ai-report-content';
       let list = null;
+      let ordered = false;
 
       String(markdown || '').split(/\r?\n/).forEach(line => {
         const heading = line.match(/^(#{2,3})\s+(.+)$/);
         const bullet = line.match(/^[-*]\s+(.+)$/);
+        const numbered = line.match(/^\d+[.)]\s+(.+)$/);
 
         if (heading) {
           list = null;
           const node = document.createElement(heading[1].length === 2 ? 'h2' : 'h3');
           appendInlineMarkdown(node, heading[2]);
-          result.append(node);
-        } else if (bullet) {
-          if (!list) {
-            list = document.createElement('ul');
-            result.append(list);
+          target.append(node);
+        } else if (bullet || numbered) {
+          const shouldOrder = Boolean(numbered);
+          if (!list || ordered !== shouldOrder) {
+            ordered = shouldOrder;
+            list = document.createElement(ordered ? 'ol' : 'ul');
+            target.append(list);
           }
           const item = document.createElement('li');
-          appendInlineMarkdown(item, bullet[1]);
+          appendInlineMarkdown(item, (bullet || numbered)[1]);
           list.append(item);
         } else if (line.trim()) {
           list = null;
           const paragraph = document.createElement('p');
           appendInlineMarkdown(paragraph, line);
-          result.append(paragraph);
+          target.append(paragraph);
         }
       });
     }
 
-    function saveGeneratedReport(aiReport) {
+    function splitGeneratedReport(reply) {
+      const lines = String(reply || '').split(/\r?\n/);
+      const titlePattern = /^\*{0,2}タイトル\*{0,2}\s*[:：]/;
+      const titleIndex = lines.findIndex(line => titlePattern.test(line.trim()));
+      const aiTitle = titleIndex >= 0
+        ? lines[titleIndex].replace(titlePattern, '').replace(/^\*\*|\*\*$/g, '').trim()
+        : '今日の振り返り';
+      if (titleIndex >= 0) lines.splice(titleIndex, 1);
+      return { aiTitle: aiTitle || '今日の振り返り', aiReport: lines.join('\n').trim() };
+    }
+
+    function saveGeneratedReport(aiReport, aiTitle) {
       const now = new Date().toISOString();
       const record = {
         ...(currentRecord || {}),
@@ -546,6 +599,7 @@
         date: currentRecord?.date || getTodayDate(),
         ...collectFormData(),
         aiReport,
+        aiTitle,
         status: 'completed',
         createdAt: currentRecord?.createdAt || now,
         updatedAt: now
@@ -557,30 +611,74 @@
       return true;
     }
 
-    async function generateAiReport() {
-      const button = document.querySelector('[data-complete-record]');
-      const result = document.getElementById('ai-report-content');
+    function renderLoading(target) {
+      target.replaceChildren();
+      target.className = 'ai-report-content is-loading';
+      const spinner = document.createElement('div');
+      const message = document.createElement('p');
+      spinner.className = 'loading-orbit';
+      message.className = 'loading-message';
+      target.append(spinner, message);
+
+      let lastIndex = -1;
+      const updateMessage = () => {
+        let index;
+        do index = Math.floor(Math.random() * ANALYSIS_MESSAGES.length); while (index === lastIndex);
+        lastIndex = index;
+        message.textContent = ANALYSIS_MESSAGES[index];
+      };
+      updateMessage();
+      const interval = setInterval(updateMessage, 2600);
+      return () => clearInterval(interval);
+    }
+
+    function getErrorLabel(error, status, responseData) {
+      if (error?.name === 'AbortError') return '通信がタイムアウトしました';
+      if (!status) return '通信エラーが発生しました';
+      if (status >= 500) return 'AIサービスとの通信に失敗しました';
+      if (!responseData?.reply) return 'AIの応答を取得できませんでした';
+      return 'AIレポートの生成に失敗しました';
+    }
+
+    function renderReportError(target, message, requestId, retryType) {
+      target.replaceChildren();
+      target.className = 'ai-report-content is-error';
+      const text = document.createElement('p');
+      const retry = document.createElement('button');
+      text.textContent = `${message}\nrequestId: ${requestId || '取得できませんでした'}`;
+      retry.type = 'button';
+      retry.className = 'btn btn-secondary retry-button';
+      retry.dataset.retryReport = retryType;
+      retry.textContent = '再試行する';
+      target.append(text, retry);
+    }
+
+    async function requestAiReport({ reportType, records, target, onSuccess }) {
       const endpoint = '/api/gemini';
-      button.disabled = true;
-      showScreen('ai-report');
-      result.className = 'ai-report-content is-loading';
-      result.textContent = 'AIが分析中です…';
+      reportControllers.get(target)?.abort();
+      const controller = new AbortController();
+      reportControllers.set(target, controller);
+      const timeout = setTimeout(() => controller.abort(), REPORT_TIMEOUT);
+      const stopLoading = renderLoading(target);
 
       let responseStatus = null;
       let responseData = {};
 
       try {
         const input = {
+          reportType,
           aiProfile: getAiProfile(),
-          date: currentRecord?.date || getTodayDate(),
-          ...collectFormData()
+          date: getTodayDate(),
+          records
         };
-        console.info('[AIレポート生成] リクエスト開始', { endpoint, date: input.date });
+        if (reportType === 'daily') Object.assign(input, records[0] || collectFormData());
+        console.info('[AIレポート生成] リクエスト開始', { endpoint, reportType, recordCount: records.length });
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(input),
-          cache: 'no-store'
+          cache: 'no-store',
+          signal: controller.signal
         });
         responseStatus = response.status;
         const responseText = await response.text();
@@ -616,17 +714,17 @@
           throw new Error(`Gemini API failed: ${response.status} ${data.code || ''}`.trim());
         }
 
-        if (!data.reply) throw new Error('Gemini response did not include a reply.');
+        if (!data.reply) throw new Error('AI_RESPONSE_MISSING');
         console.info('[AIレポート生成] 通信成功', {
           endpoint,
           requestId: data.requestId,
           model: data.model
         });
-        if (!saveGeneratedReport(data.reply)) {
-          throw new Error('生成したAIレポートを保存できませんでした。');
-        }
-        renderMarkdown(data.reply);
+        if (reportControllers.get(target) !== controller) return;
+        const report = splitGeneratedReport(data.reply);
+        onSuccess(report);
       } catch (error) {
+        if (reportControllers.get(target) !== controller) return;
         const displayedRequestId = responseData.requestId || '取得できませんでした';
 
         console.error('[AIレポート生成] 失敗しました', {
@@ -637,11 +735,36 @@
           geminiMessage: responseData.geminiMessage,
           originalError: error
         });
-        result.className = 'ai-report-content is-error';
-        result.textContent = `AIレポートの生成に失敗しました\nrequestId: ${displayedRequestId}`;
+        renderReportError(target, getErrorLabel(error, responseStatus, responseData), displayedRequestId, reportType);
       } finally {
-        button.disabled = false;
+        clearTimeout(timeout);
+        stopLoading();
+        if (reportControllers.get(target) === controller) reportControllers.delete(target);
       }
+    }
+
+    async function generateAiReport() {
+      const button = document.querySelector('[data-complete-record]');
+      const target = document.getElementById('ai-report-content');
+      button.disabled = true;
+      showScreen('ai-report');
+      const today = toAnalysisRecord({ ...(currentRecord || {}), ...collectFormData(), date: currentRecord?.date || getTodayDate() });
+      const historyRecords = recordRepository.getAll()
+        .filter(record => record.date !== today.date)
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+        .slice(0, 29)
+        .map(toAnalysisRecord);
+      lastReportRequest = 'daily';
+      await requestAiReport({
+        reportType: 'daily',
+        records: [today, ...historyRecords],
+        target,
+        onSuccess: ({ aiReport, aiTitle }) => {
+          if (!saveGeneratedReport(aiReport, aiTitle)) throw new Error('生成したAIレポートを保存できませんでした。');
+          renderMarkdown(aiReport, target);
+        }
+      });
+      button.disabled = false;
     }
 
     function truncateText(text, maxLength = 40) {
@@ -650,6 +773,76 @@
       return characters.length > maxLength
         ? `${characters.slice(0, maxLength).join('')}…`
         : characters.join('');
+    }
+
+    function renderHomeStats() {
+      const records = recordRepository.getAll();
+      const dates = [...new Set(records.map(record => record.date).filter(Boolean))].sort().reverse();
+      let streak = 0;
+      if (dates.length) {
+        let cursor = new Date(`${dates[0]}T00:00:00`);
+        for (const dateString of dates) {
+          const expected = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+          if (dateString !== expected) break;
+          streak += 1;
+          cursor.setDate(cursor.getDate() - 1);
+        }
+      }
+      document.getElementById('streak-count').textContent = `${streak}日`;
+      document.getElementById('total-count').textContent = `${records.length}件`;
+      document.getElementById('latest-date').textContent = dates[0] ? formatRecordDate(dates[0]).slice(5) : '—';
+    }
+
+    function getPeriodRecords(reportType) {
+      return recordRepository.getAll()
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+        .slice(0, reportType === 'weekly' ? 21 : 62);
+    }
+
+    function toAnalysisRecord(record) {
+      return {
+        date: record.date,
+        actions: record.actions || [],
+        todayEvent: record.todayEvent || '',
+        diary: record.diary || '',
+        mood: record.mood || '',
+        satisfaction: Number(record.satisfaction) || 0,
+        effort: record.effort || [],
+        tomorrowStep: record.tomorrowStep || ''
+      };
+    }
+
+    async function renderPeriodReport(reportType) {
+      currentPeriod = reportType;
+      const target = document.getElementById('period-report-content');
+      const heading = document.getElementById('period-report-heading');
+      const records = getPeriodRecords(reportType);
+      heading.textContent = reportType === 'daily' ? '今日のAIレポート' : reportType === 'weekly' ? '今週のAIレポート' : '今月のAIレポート';
+
+      if (!records.length) {
+        target.className = 'ai-report-content';
+        target.textContent = 'まだ記録がありません';
+        return;
+      }
+
+      if (reportType === 'daily') {
+        reportControllers.get(target)?.abort();
+        target.className = 'ai-report-content';
+        const todayRecord = records.find(record => record.date === getTodayDate());
+        if (todayRecord?.aiReport) renderMarkdown(todayRecord.aiReport, target);
+        else target.textContent = todayRecord
+          ? '今日の記録には、まだAIレポートがありません。'
+          : '今日の記録はまだありません。';
+        return;
+      }
+
+      lastReportRequest = reportType;
+      await requestAiReport({
+        reportType,
+        records: records.map(toAnalysisRecord),
+        target,
+        onSuccess: ({ aiReport }) => renderMarkdown(aiReport, target)
+      });
     }
 
     // LocalStorageの記録を日付降順で一覧へ描画します。
@@ -683,6 +876,9 @@
         const heading = document.createElement('span');
         const headingText = document.createElement('span');
         const arrow = document.createElement('span');
+        const title = document.createElement('strong');
+        const meta = document.createElement('span');
+        const rating = document.createElement('span');
         const excerpt = document.createElement('p');
 
         card.type = 'button';
@@ -693,10 +889,23 @@
         headingText.textContent = `${formatRecordDate(record.date)}　${record.mood || '—'}`;
         arrow.className = 'arrow';
         arrow.textContent = '›';
+        title.className = 'record-title';
+        title.textContent = record.aiTitle || '今日の振り返り';
+        meta.className = 'record-meta';
+        rating.className = 'record-rating';
+        const satisfaction = Math.max(0, Math.min(5, Number(record.satisfaction) || 0));
+        rating.textContent = satisfaction ? `${'★'.repeat(satisfaction)}${'☆'.repeat(5 - satisfaction)}` : '満足度 未入力';
+        meta.append(rating);
+        [...new Set([...(record.actions || []), ...(record.effort || [])])].slice(0, 4).forEach(category => {
+          const tag = document.createElement('span');
+          tag.className = 'record-category';
+          tag.textContent = category;
+          meta.append(tag);
+        });
         excerpt.textContent = truncateText(record.diary);
 
         heading.append(headingText, arrow);
-        card.append(heading, excerpt);
+        card.append(heading, title, meta, excerpt);
         recordList.append(card);
       });
     }
@@ -767,7 +976,11 @@
     function showScreen(id, addHistory = true) {
       const target = document.getElementById(id);
       if (!target) return;
-      if (id === 'reports') renderRecordList();
+      if (id === 'home') renderHomeStats();
+      if (id === 'reports') {
+        renderRecordList();
+        renderPeriodReport(currentPeriod);
+      }
       if (id === 'ai-report' && currentRecord?.aiReport) renderMarkdown(currentRecord.aiReport);
       screens.forEach(screen => screen.classList.toggle('active', screen === target));
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -775,6 +988,13 @@
     }
 
     document.addEventListener('click', event => {
+      const retryButton = event.target.closest('[data-retry-report]');
+      if (retryButton) {
+        if (retryButton.dataset.retryReport === 'daily') generateAiReport();
+        else renderPeriodReport(retryButton.dataset.retryReport || lastReportRequest);
+        return;
+      }
+
       const recordCard = event.target.closest('[data-record-id]');
       if (recordCard) {
         renderRecordDetail(recordCard.dataset.recordId);
@@ -808,6 +1028,7 @@
       if (period) {
         document.querySelectorAll('.period-card').forEach(button => button.classList.remove('active'));
         period.classList.add('active');
+        renderPeriodReport(period.dataset.period);
       }
     });
 
@@ -827,6 +1048,7 @@
     window.addEventListener('popstate', event => showScreen(event.state?.screen || location.hash.slice(1) || 'home', false));
     currentRecord = recordRepository.findByDate(getTodayDate());
     hydrateForm(currentRecord);
+    renderHomeStats();
     const initial = document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
     history.replaceState({ screen: initial }, '', initial === 'home' ? location.pathname : `#${initial}`);
     showScreen(initial, false);

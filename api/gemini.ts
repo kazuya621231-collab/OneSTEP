@@ -4,7 +4,7 @@ import {
   GeminiServiceError,
   sendMessageToGemini
 } from '../src/services/gemini.js';
-import { buildDailyReportPrompt, type DailyReportInput } from '../src/prompts/daily-report.js';
+import { buildReportPrompt, type ReportRequestInput } from '../src/prompts/daily-report.js';
 
 function json(body: object, status = 200): Response {
   return Response.json(body, {
@@ -57,9 +57,9 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   try {
-    let input: DailyReportInput;
+    let input: ReportRequestInput;
     try {
-      input = await request.json() as DailyReportInput;
+      input = await request.json() as ReportRequestInput;
     } catch {
       return json({
         error: '入力データを読み取れませんでした。',
@@ -70,7 +70,7 @@ export async function POST(request: Request): Promise<Response> {
       }, 400);
     }
 
-    const prompt = buildDailyReportPrompt(input);
+    const prompt = buildReportPrompt(input);
     const reply = await sendMessageToGemini(prompt);
 
     console.log('[Vercel Function] Gemini通信成功', {

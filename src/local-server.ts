@@ -3,7 +3,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { createServer, type ServerResponse } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { GEMINI_MODEL, GeminiServiceError, sendMessageToGemini } from './services/gemini.js';
-import { buildDailyReportPrompt, type DailyReportInput } from './prompts/daily-report.js';
+import { buildReportPrompt, type ReportRequestInput } from './prompts/daily-report.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const PROJECT_ROOT = process.cwd();
@@ -42,10 +42,10 @@ function serveStaticFile(pathname: string, response: ServerResponse): void {
   createReadStream(filePath).pipe(response);
 }
 
-async function readJsonBody(request: import('node:http').IncomingMessage): Promise<DailyReportInput> {
+async function readJsonBody(request: import('node:http').IncomingMessage): Promise<ReportRequestInput> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(Buffer.from(chunk));
-  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as DailyReportInput;
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as ReportRequestInput;
 }
 
 const server = createServer(async (request, response) => {
@@ -68,7 +68,7 @@ const server = createServer(async (request, response) => {
 
     try {
       const input = await readJsonBody(request);
-      const reply = await sendMessageToGemini(buildDailyReportPrompt(input));
+      const reply = await sendMessageToGemini(buildReportPrompt(input));
       console.info('[Local API] Gemini request succeeded', { requestId, replyLength: reply.length });
       sendJson(response, 200, { reply, model: GEMINI_MODEL, requestId });
     } catch (error) {
