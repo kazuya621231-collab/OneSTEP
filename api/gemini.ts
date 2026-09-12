@@ -4,8 +4,7 @@ import {
   GeminiServiceError,
   sendMessageToGemini
 } from '../src/services/gemini.js';
-
-const TEST_MESSAGE = 'こんにちは';
+import { buildDailyReportPrompt, type DailyReportInput } from '../src/prompts/daily-report.js';
 
 function json(body: object, status = 200): Response {
   return Response.json(body, {
@@ -48,7 +47,7 @@ export function GET(): Response {
   });
 }
 
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
   const requestId = randomUUID();
 
   console.log('[Vercel Function] リクエスト開始', {
@@ -58,7 +57,21 @@ export async function POST(): Promise<Response> {
   });
 
   try {
-    const reply = await sendMessageToGemini(TEST_MESSAGE);
+    let input: DailyReportInput;
+    try {
+      input = await request.json() as DailyReportInput;
+    } catch {
+      return json({
+        error: '入力データを読み取れませんでした。',
+        code: 'INVALID_REQUEST',
+        httpStatus: 400,
+        geminiMessage: null,
+        requestId
+      }, 400);
+    }
+
+    const prompt = buildDailyReportPrompt(input);
+    const reply = await sendMessageToGemini(prompt);
 
     console.log('[Vercel Function] Gemini通信成功', {
       requestId,
