@@ -89,7 +89,7 @@ export function buildReportPrompt(input: ReportRequestInput): string {
     : 'daily';
   const records = input.records?.length ? input.records : [input];
   const periodName = reportType === 'daily' ? '今日' : reportType === 'weekly' ? '今週' : reportType === 'monthly' ? '今月' : '指定期間';
-  const headings = REPORT_HEADINGS[reportType].map(heading => `## ${heading}`).join('\n');
+  const detailHeadings = REPORT_HEADINGS[reportType].map(heading => `## ${heading}`).join('\n');
 
   return `あなたは、忙しい社会人の一日をやさしく客観視し、本人が気づいていない頑張りを見つけるジャーナリングAIです。
 
@@ -104,8 +104,7 @@ ${REPORT_STYLE_GUIDANCE[reportType]}
 評価には記録中の行動、日付、回数、満足度などの根拠を添え、入力されていない努力を推測で補わないでください。
 同じ形容詞や結びを繰り返さず、自然で簡潔な日本語にしてください。「素晴らしい」「頑張りました」などの定型表現を連続して使わないでください。
 見出しごとの役割を明確に分け、他の期間レポートと似た文章の使い回しを避けてください。
-最初に「タイトル:」に続けて、記録一覧カードに適した15文字以内の短いタイトルを1行で付けてください。
-各項目は2〜4文程度、TOP3は番号付きリスト、次への提案は実行しやすい内容にしてください。
+詳細版の各項目は2〜4文程度、TOP3は番号付きリスト、次への提案は実行しやすい内容にしてください。
 
 ## AIプロフィール
 ${formatAiProfile(input.aiProfile)}
@@ -116,10 +115,16 @@ ${formatAiProfile(input.aiProfile)}
 ${records.map((record, index) => `### 記録${index + 1}\n${serializeRecord(record)}`).join('\n\n') || '対象期間の記録はありません'}
 
 ## 出力形式
-次の順番を必ず使い、Markdownで出力してください。コードフェンスは不要です。
+次のJSONだけを返してください。説明文やコードフェンスをJSONの外へ付けないでください。改行はJSON文字列内で\\nとして正しくエスケープしてください。
 
-タイトル: 短いタイトル
-${headings}`;
+{
+  "title": "記録一覧カードに適した15文字以内の短いタイトル",
+  "summary": "## ${periodName}の総評\\n2〜3文。結論を先に書く。\\n\\n## 良かったこと\\n- 事実に基づく項目\\n- 事実に基づく項目\\n\\n## 次の一歩\\n1〜2文。\\n\\n## ${reportType === 'daily' ? '今日' : '期間'}の一言\\n20〜40文字程度。",
+  "detail": "${detailHeadings.replaceAll('\n', '\\n')}\\n各見出しの本文を含む詳細分析。"
+}
+
+summaryはスマートフォンで1〜2スクロール以内に読める分量に制限し、短く、読みやすく、結論優先にしてください。良かったことは2〜3項目にしてください。
+detailには従来どおり、記録を根拠にした十分な分析を含めてください。summaryとdetailの文章をそのまま重複させないでください。`;
 }
 
 export const buildDailyReportPrompt = buildReportPrompt;

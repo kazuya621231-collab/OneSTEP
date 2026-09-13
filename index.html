@@ -183,6 +183,15 @@
     .ai-report-content p { margin: 0 0 12px; white-space: pre-wrap; }
     .ai-report-content ul, .ai-report-content ol { margin: 0 0 14px; padding-left: 1.5em; }
     .ai-report-content li { margin-bottom: 5px; }
+    .section-card > .ai-report-content { padding: 0; border: 0; border-radius: 0; }
+    .report-summary h2 { margin-top: 21px; }
+    .report-summary h2:first-child { margin-top: 0; }
+    .report-detail-toggle { min-height: 48px; margin-top: 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--primary-dark); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
+    .report-detail { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .24s ease, opacity .2s ease; }
+    .report-detail > div { min-height: 0; overflow: hidden; }
+    .report-detail.is-open { grid-template-rows: 1fr; opacity: 1; }
+    .report-detail-body { padding-top: 7px; border-top: 1px solid var(--line); }
+    @media (prefers-reduced-motion: reduce) { .report-detail { transition: none; } }
     .ai-report-content.is-loading { color: var(--primary); text-align: center; }
     .ai-report-content.is-error { color: #9a4b45; white-space: pre-line; }
     .loading-orbit { position: relative; width: 52px; height: 52px; margin: 4px auto 19px; border: 3px solid var(--primary-light); border-top-color: var(--primary); border-radius: 50%; animation: spin .9s linear infinite; }
@@ -376,7 +385,7 @@
     let currentPeriod = 'daily';
     let lastReportRequest = null;
     let selectedRecordId = null;
-    let customReport = '';
+    let customReport = null;
     const reportControllers = new WeakMap();
 
     /*
@@ -578,6 +587,7 @@
         date: selectedDate,
         ...formData,
         aiReport: contentChanged ? '' : baseRecord?.aiReport || '',
+        aiReportSummary: contentChanged ? '' : baseRecord?.aiReportSummary || '',
         aiTitle: contentChanged ? '' : baseRecord?.aiTitle || '',
         status: statusOverride || baseRecord?.status || 'draft',
         createdAt: baseRecord?.createdAt || now,
@@ -720,9 +730,9 @@
     }
 
     // GeminiのMarkdownを安全なDOMへ変換し、見出しと箇条書きを維持します。
-    function renderMarkdown(markdown, target = document.getElementById('ai-report-content')) {
+    function renderMarkdown(markdown, target = document.getElementById('ai-report-content'), resetTarget = true) {
       target.replaceChildren();
-      target.className = 'ai-report-content';
+      if (resetTarget) target.className = 'ai-report-content';
       let list = null;
       let ordered = false;
 
@@ -755,7 +765,61 @@
       });
     }
 
+    function renderStructuredReport(report, target = document.getElementById('ai-report-content')) {
+      const summary = String(report?.summary || '').trim();
+      const detail = String(report?.detail || report?.aiReport || '').trim();
+      target.replaceChildren();
+      target.className = 'ai-report-content';
+
+      // 旧データは要約を持たないため、これまでどおり詳細全文を表示します。
+      if (!summary) {
+        renderMarkdown(detail, target);
+        return;
+      }
+
+      const summaryElement = document.createElement('section');
+      const toggle = document.createElement('button');
+      const detailElement = document.createElement('section');
+      const detailBody = document.createElement('div');
+      const detailId = `report-detail-${Math.random().toString(36).slice(2)}`;
+      summaryElement.className = 'report-summary';
+      toggle.type = 'button';
+      toggle.className = 'report-detail-toggle';
+      toggle.textContent = '▼ 詳細な分析を見る';
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-controls', detailId);
+      detailElement.id = detailId;
+      detailElement.className = 'report-detail';
+      detailElement.setAttribute('aria-hidden', 'true');
+      detailBody.className = 'report-detail-body';
+      renderMarkdown(summary, summaryElement, false);
+      renderMarkdown(detail, detailBody, false);
+      detailElement.append(detailBody);
+      toggle.addEventListener('click', () => {
+        const isOpen = detailElement.classList.toggle('is-open');
+        detailElement.setAttribute('aria-hidden', String(!isOpen));
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.textContent = isOpen ? '▲ 詳細な分析を閉じる' : '▼ 詳細な分析を見る';
+      });
+      target.append(summaryElement, toggle, detailElement);
+    }
+
     function splitGeneratedReport(reply) {
+      const normalized = String(reply || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      try {
+        const parsed = JSON.parse(normalized);
+        if (parsed && typeof parsed.summary === 'string' && typeof parsed.detail === 'string') {
+          return {
+            aiTitle: typeof parsed.title === 'string' && parsed.title.trim() ? parsed.title.trim().slice(0, 15) : '今日の振り返り',
+            summary: parsed.summary.trim(),
+            detail: parsed.detail.trim(),
+            aiReport: parsed.detail.trim()
+          };
+        }
+      } catch (error) {
+        console.warn('[AIレポート生成] 構造化JSONを解析できなかったため従来形式として処理します。', error);
+      }
+
       const lines = String(reply || '').split(/\r?\n/);
       const titlePattern = /^\*{0,2}タイトル\*{0,2}\s*[:：]/;
       const titleIndex = lines.findIndex(line => titlePattern.test(line.trim()));
@@ -763,10 +827,11 @@
         ? lines[titleIndex].replace(titlePattern, '').replace(/^\*\*|\*\*$/g, '').trim()
         : '今日の振り返り';
       if (titleIndex >= 0) lines.splice(titleIndex, 1);
-      return { aiTitle: aiTitle || '今日の振り返り', aiReport: lines.join('\n').trim() };
+      const detail = lines.join('\n').trim();
+      return { aiTitle: aiTitle || '今日の振り返り', summary: '', detail, aiReport: detail };
     }
 
-    function saveGeneratedReport(aiReport, aiTitle) {
+    function saveGeneratedReport(aiReport, aiTitle, aiReportSummary = '') {
       const now = new Date().toISOString();
       const record = {
         ...(currentRecord || {}),
@@ -774,6 +839,7 @@
         date: currentRecord?.date || getTodayDate(),
         ...collectFormData(),
         aiReport,
+        aiReportSummary,
         aiTitle,
         status: 'completed',
         createdAt: currentRecord?.createdAt || now,
@@ -920,9 +986,9 @@
         reportType: 'daily',
         records: [today, ...historyRecords],
         target,
-        onSuccess: ({ aiReport, aiTitle }) => {
-          if (!saveGeneratedReport(aiReport, aiTitle)) throw new Error('生成したAIレポートを保存できませんでした。');
-          renderMarkdown(aiReport, target);
+        onSuccess: ({ aiReport, aiTitle, summary, detail }) => {
+          if (!saveGeneratedReport(aiReport, aiTitle, summary)) throw new Error('生成したAIレポートを保存できませんでした。');
+          renderStructuredReport({ summary, detail }, target);
         }
       });
       button.disabled = false;
@@ -976,7 +1042,7 @@
         reportControllers.get(target)?.abort();
         heading.textContent = '任意期間のAIレポート';
         target.className = 'ai-report-content';
-        if (customReport) renderMarkdown(customReport, target);
+        if (customReport) renderStructuredReport(customReport, target);
         else target.textContent = '開始日と終了日を選んで分析してください。';
         return;
       }
@@ -994,7 +1060,7 @@
         reportControllers.get(target)?.abort();
         target.className = 'ai-report-content';
         const todayRecord = records.find(record => record.date === getTodayDate());
-        if (todayRecord?.aiReport) renderMarkdown(todayRecord.aiReport, target);
+        if (todayRecord?.aiReport) renderStructuredReport({ summary: todayRecord.aiReportSummary, detail: todayRecord.aiReport }, target);
         else target.textContent = todayRecord
           ? '今日の記録には、まだAIレポートがありません。'
           : '今日の記録はまだありません。';
@@ -1006,7 +1072,7 @@
         reportType,
         records: records.map(toAnalysisRecord),
         target,
-        onSuccess: ({ aiReport }) => renderMarkdown(aiReport, target)
+        onSuccess: report => renderStructuredReport(report, target)
       });
     }
 
@@ -1030,7 +1096,7 @@
         .filter(record => record.date >= startDate && record.date <= endDate)
         .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
       if (!records.length) {
-        customReport = '';
+        customReport = null;
         target.className = 'ai-report-content';
         target.textContent = 'この期間の記録はありません';
         return;
@@ -1041,9 +1107,9 @@
         reportType: 'custom',
         records: records.map(toAnalysisRecord),
         target,
-        onSuccess: ({ aiReport }) => {
-          customReport = aiReport;
-          renderMarkdown(aiReport, target);
+        onSuccess: report => {
+          customReport = report;
+          renderStructuredReport(report, target);
         }
       });
     }
@@ -1168,6 +1234,22 @@
       const satisfactionText = satisfaction > 0
         ? `${'★'.repeat(Math.min(satisfaction, 5))}${'☆'.repeat(Math.max(5 - satisfaction, 0))}（${satisfaction}/5）`
         : '未入力';
+      const reportSection = document.createElement('section');
+      const reportHeading = document.createElement('h2');
+      const reportBody = document.createElement('div');
+      reportSection.className = 'section-card';
+      reportHeading.className = 'section-title';
+      reportHeading.textContent = '今日のAIレポート';
+      reportSection.append(reportHeading);
+      if (record.aiReport) {
+        renderStructuredReport({ summary: record.aiReportSummary, detail: record.aiReport }, reportBody);
+        reportSection.append(reportBody);
+      } else {
+        const emptyReport = document.createElement('p');
+        emptyReport.className = 'detail-value';
+        emptyReport.textContent = '未入力';
+        reportSection.append(emptyReport);
+      }
 
       detailContent.append(
         createDetailSection('行動チェック', record.actions, 'tags'),
@@ -1177,7 +1259,7 @@
         createDetailSection('満足度', satisfactionText),
         createDetailSection('頑張ったこと', record.effort, 'tags'),
         createDetailSection('明日の一歩', record.tomorrowStep),
-        createDetailSection('今日のAIレポート', record.aiReport)
+        reportSection
       );
     }
 
@@ -1189,7 +1271,7 @@
         renderRecordList();
         renderPeriodReport(currentPeriod);
       }
-      if (id === 'ai-report' && currentRecord?.aiReport) renderMarkdown(currentRecord.aiReport);
+      if (id === 'ai-report' && currentRecord?.aiReport) renderStructuredReport({ summary: currentRecord.aiReportSummary, detail: currentRecord.aiReport });
       screens.forEach(screen => screen.classList.toggle('active', screen === target));
       window.scrollTo({ top: 0, behavior: 'instant' });
       if (addHistory) history.pushState({ screen: id }, '', `#${id}`);
@@ -1303,7 +1385,7 @@
     recordDateInput.addEventListener('change', scheduleAutosave);
     ['custom-start-date', 'custom-end-date'].forEach(id => {
       document.getElementById(id).addEventListener('change', () => {
-        customReport = '';
+        customReport = null;
         document.getElementById('custom-period-error').textContent = '';
         if (currentPeriod === 'custom') {
           const target = document.getElementById('period-report-content');

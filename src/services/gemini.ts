@@ -77,7 +77,8 @@ async function requestGemini(message: string, apiKey: string, endpoint: string):
       'x-goog-api-key': apiKey
     },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: message }] }]
+      contents: [{ parts: [{ text: message }] }],
+      generationConfig: { responseMimeType: 'application/json' }
     })
   });
 
