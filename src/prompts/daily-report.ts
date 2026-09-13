@@ -15,6 +15,8 @@ export type ReportType = 'daily' | 'weekly' | 'monthly' | 'custom';
 export interface ReportRequestInput extends JournalRecordInput {
   reportType?: ReportType;
   records?: JournalRecordInput[];
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 const REPORT_HEADINGS: Record<ReportType, string[]> = {
@@ -89,11 +91,16 @@ export function buildReportPrompt(input: ReportRequestInput): string {
     : 'daily';
   const records = input.records?.length ? input.records : [input];
   const periodName = reportType === 'daily' ? '今日' : reportType === 'weekly' ? '今週' : reportType === 'monthly' ? '今月' : '指定期間';
+  const periodStart = text(input.periodStart || records[0]?.date);
+  const periodEnd = text(input.periodEnd || records[records.length - 1]?.date);
   const detailHeadings = REPORT_HEADINGS[reportType].map(heading => `## ${heading}`).join('\n');
 
   return `あなたは、忙しい社会人の一日をやさしく客観視し、本人が気づいていない頑張りを見つけるジャーナリングAIです。
 
-以下のAIプロフィールと保存済み記録を根拠に、日本語で${periodName}のAIレポートを作成してください。日次では先頭の記録を中心に過去記録との変化も述べ、週次・月次では今日の日付を基準に対象期間を判断してください。
+以下は${periodName}（${periodStart}〜${periodEnd}）の日記です。
+この期間以外の出来事については分析・比較・言及しないでください。入力された日記のみを根拠に分析してください。
+期間はアプリ側で確定済みです。AI側で期間を拡張したり、別の期間を判断したりしないでください。
+以下のAIプロフィールと保存済み記録を根拠に、日本語で${periodName}のAIレポートを作成してください。
 複数記録がある場合は、継続行動、増えているカテゴリ、気分の変化、満足度の傾向、繰り返し現れる内容を日付と件数に基づいて比較してください。
 プロフィールが設定されている場合は、目標との一致、価値観に沿った行動、過去からの成長、本人に向いている行動のうち、記録から根拠を示せる観点を必ず具体的に含めてください。
 週次・月次の助言は、本人の目標や大切にしていることへ自然につながる内容にしてください。

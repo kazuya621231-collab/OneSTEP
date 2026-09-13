@@ -221,6 +221,7 @@
     .period-report { margin-bottom: 28px; }
     .period-report[hidden] { display: none; }
     .period-report-heading { margin: 0 0 12px; font-size: 16px; }
+    .report-target-period { margin: -6px 0 9px; color: var(--primary-dark); font-size: 12px; font-weight: 700; }
     .report-analyzed-at { min-height: 17px; margin: -6px 0 10px; color: var(--muted); font-size: 11px; text-align: right; }
     .report-cache-status { min-height: 0; margin: 0 0 10px; padding: 0; color: var(--primary-dark); font-size: 12px; font-weight: 700; line-height: 1.7; white-space: pre-line; }
     .report-cache-status:empty { display: none; }
@@ -354,6 +355,7 @@
       </div>
       <section class="period-report" id="period-report">
         <h2 class="period-report-heading" id="period-report-heading">今日のAIレポート</h2>
+        <p class="report-target-period" id="report-target-period"></p>
         <p class="report-analyzed-at" id="report-analyzed-at"></p>
         <p class="report-cache-status" id="report-cache-status" role="status" aria-live="polite"></p>
         <button class="btn btn-primary report-generate-button" type="button" id="generate-period-report">再分析する</button>
@@ -591,9 +593,13 @@
     // ブラウザのローカル時刻を記録日として扱います。
     function getTodayDate() {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      return formatLocalDate(now);
+    }
+
+    function formatLocalDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
 
@@ -1037,7 +1043,7 @@
       target.append(text, retry);
     }
 
-    async function requestAiReport({ reportType, records, target, onSuccess, onError, preserveContent = false }) {
+    async function requestAiReport({ reportType, period, records, target, onSuccess, onError, preserveContent = false }) {
       const endpoint = '/api/gemini';
       reportControllers.get(target)?.abort();
       const controller = new AbortController();
@@ -1051,6 +1057,8 @@
       try {
         const input = {
           reportType,
+          periodStart: period.start,
+          periodEnd: period.end,
           aiProfile: getAiProfile(),
           date: getTodayDate(),
           records
@@ -1134,21 +1142,18 @@
       button.disabled = true;
       showScreen('ai-report');
       const today = toAnalysisRecord({ ...(currentRecord || {}), ...collectFormData(), date: currentRecord?.date || getTodayDate() });
-      const historyRecords = recordRepository.getAll()
-        .filter(record => record.date !== today.date)
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-        .slice(0, 29)
-        .map(toAnalysisRecord);
+      const period = { type: 'daily', start: today.date, end: today.date };
       lastReportRequest = 'daily';
       await requestAiReport({
         reportType: 'daily',
-        records: [today, ...historyRecords],
+        period,
+        records: [today],
         target,
         onSuccess: ({ aiReport, aiTitle, summary, detail }) => {
           if (!saveGeneratedReport(aiReport, aiTitle, summary)) throw new Error('生成したAIレポートを保存できませんでした。');
           const report = { aiReport, aiTitle, summary, detail };
-          reportCacheRepository.set(REPORT_CACHE_KEYS.daily, report, { type: 'daily', start: today.date, end: today.date });
-          reportHistoryRepository.add(report, { type: 'daily', start: today.date, end: today.date });
+          reportCacheRepository.set(REPORT_CACHE_KEYS.daily, report, period);
+          reportHistoryRepository.add(report, period);
           renderStructuredReport(report, target);
         }
       });
@@ -1173,10 +1178,30 @@
       document.getElementById('latest-date').textContent = dates[0] ? formatRecordDate(dates[0]).slice(5) : '—';
     }
 
-    function getPeriodRecords(reportType) {
+    function getReportPeriod(reportType, customStart = '', customEnd = '') {
+      const today = new Date(`${getTodayDate()}T00:00:00`);
+      if (reportType === 'daily') {
+        const date = formatLocalDate(today);
+        return { type: reportType, start: date, end: date };
+      }
+      if (reportType === 'weekly') {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 6);
+        return { type: reportType, start: formatLocalDate(start), end: formatLocalDate(today) };
+      }
+      if (reportType === 'monthly') {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return { type: reportType, start: formatLocalDate(start), end: formatLocalDate(end) };
+      }
+      return { type: 'custom', start: customStart, end: customEnd };
+    }
+
+    function getPeriodRecords(reportType, customStart = '', customEnd = '') {
+      const period = getReportPeriod(reportType, customStart, customEnd);
       return recordRepository.getAll()
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-        .slice(0, reportType === 'weekly' ? 21 : 62);
+        .filter(record => record.date >= period.start && record.date <= period.end)
+        .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     }
 
     function toAnalysisRecord(record) {
@@ -1193,10 +1218,20 @@
     }
 
     function getSelectedReportCache(reportType) {
-      if (reportType !== 'custom') return reportCacheRepository.get(REPORT_CACHE_KEYS[reportType]);
       const startDate = document.getElementById('custom-start-date').value;
       const endDate = document.getElementById('custom-end-date').value;
-      return startDate && endDate ? reportCacheRepository.get(getPeriodCacheKey(startDate, endDate)) : null;
+      const period = getReportPeriod(reportType, startDate, endDate);
+      const key = reportType === 'custom'
+        ? startDate && endDate ? getPeriodCacheKey(startDate, endDate) : ''
+        : REPORT_CACHE_KEYS[reportType];
+      if (!key) return null;
+      const cache = reportCacheRepository.get(key);
+      if (!cache) return null;
+      if (cache.period?.start !== period.start || cache.period?.end !== period.end) {
+        reportCacheRepository.remove(key);
+        return null;
+      }
+      return cache;
     }
 
     function updateReportCacheUi(cache, state = cache ? 'cache' : 'empty') {
@@ -1228,6 +1263,14 @@
       document.getElementById('generate-period-report').textContent = cache ? '再分析する' : '分析を開始する';
     }
 
+    function updateReportPeriodDisplay(period) {
+      const label = getReportTypeLabel(period.type);
+      const dates = period.start === period.end
+        ? formatRecordDate(period.start)
+        : `${formatRecordDate(period.start)}〜${formatRecordDate(period.end)}`;
+      document.getElementById('report-target-period').textContent = period.start && period.end ? `${label}　${dates}` : label;
+    }
+
     function renderPeriodReport(reportType) {
       currentPeriod = reportType;
       const target = document.getElementById('period-report-content');
@@ -1235,6 +1278,12 @@
       const customControls = document.getElementById('custom-period-controls');
       customControls.hidden = reportType !== 'custom';
       reportControllers.get(target)?.abort();
+      const selectedPeriod = getReportPeriod(
+        reportType,
+        document.getElementById('custom-start-date').value,
+        document.getElementById('custom-end-date').value
+      );
+      updateReportPeriodDisplay(selectedPeriod);
 
       if (reportType === 'custom') {
         heading.textContent = '任意期間のAIレポート';
@@ -1297,19 +1346,8 @@
         return;
       }
 
-      const records = reportType === 'custom'
-        ? recordRepository.getAll()
-          .filter(record => record.date >= startDate && record.date <= endDate)
-          .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
-        : reportType === 'daily'
-          ? (() => {
-            const allRecords = getPeriodRecords('daily');
-            const todayRecord = allRecords.find(record => record.date === getTodayDate());
-            return todayRecord
-              ? [todayRecord, ...allRecords.filter(record => record.id !== todayRecord.id).slice(0, 29)]
-              : [];
-          })()
-          : getPeriodRecords(reportType);
+      const period = getReportPeriod(reportType, startDate, endDate);
+      const records = getPeriodRecords(reportType, startDate, endDate);
       if (!records.length) {
         customReport = null;
         target.className = 'ai-report-content';
@@ -1317,12 +1355,7 @@
         return;
       }
 
-      const dates = records.map(record => record.date).filter(Boolean).sort();
-      const period = {
-        type: reportType,
-        start: reportType === 'custom' ? startDate : reportType === 'daily' ? getTodayDate() : dates[0],
-        end: reportType === 'custom' ? endDate : reportType === 'daily' ? getTodayDate() : dates[dates.length - 1]
-      };
+      updateReportPeriodDisplay(period);
       const cacheKey = reportType === 'custom'
         ? getPeriodCacheKey(startDate, endDate)
         : REPORT_CACHE_KEYS[reportType];
@@ -1339,6 +1372,7 @@
         await new Promise(resolve => setTimeout(resolve, 320));
         await requestAiReport({
           reportType,
+          period,
           records: records.map(toAnalysisRecord),
           target,
           preserveContent: true,
