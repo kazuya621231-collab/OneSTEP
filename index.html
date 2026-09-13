@@ -222,6 +222,9 @@
     .period-report[hidden] { display: none; }
     .period-report-heading { margin: 0 0 12px; font-size: 16px; }
     .report-analyzed-at { min-height: 17px; margin: -6px 0 10px; color: var(--muted); font-size: 11px; text-align: right; }
+    .report-cache-status { min-height: 0; margin: 0 0 10px; padding: 0; color: var(--primary-dark); font-size: 12px; font-weight: 700; line-height: 1.7; white-space: pre-line; }
+    .report-cache-status:empty { display: none; }
+    .report-cache-status.is-warning { padding: 12px 14px; border: 1px solid #ead9bf; border-radius: 13px; background: #fffaf1; color: #866331; }
     .report-generate-button { margin-top: 12px; }
     .custom-period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: -3px 0 20px; padding: 17px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
     .custom-period[hidden] { display: none; }
@@ -349,8 +352,9 @@
       <section class="period-report" id="period-report">
         <h2 class="period-report-heading" id="period-report-heading">今日のAIレポート</h2>
         <p class="report-analyzed-at" id="report-analyzed-at"></p>
+        <p class="report-cache-status" id="report-cache-status" role="status" aria-live="polite"></p>
         <div class="ai-report-content" id="period-report-content" aria-live="polite"></div>
-        <button class="btn btn-primary report-generate-button" type="button" id="generate-period-report">AI分析を開始する</button>
+        <button class="btn btn-primary report-generate-button" type="button" id="generate-period-report">再分析する</button>
       </section>
       <h2 class="list-heading">保存された記録一覧</h2>
       <div class="record-list" id="record-list"></div>
@@ -1030,13 +1034,13 @@
       target.append(text, retry);
     }
 
-    async function requestAiReport({ reportType, records, target, onSuccess }) {
+    async function requestAiReport({ reportType, records, target, onSuccess, onError, preserveContent = false }) {
       const endpoint = '/api/gemini';
       reportControllers.get(target)?.abort();
       const controller = new AbortController();
       reportControllers.set(target, controller);
       const timeout = setTimeout(() => controller.abort(), REPORT_TIMEOUT);
-      const stopLoading = renderLoading(target);
+      const stopLoading = preserveContent ? () => {} : renderLoading(target);
 
       let responseStatus = null;
       let responseData = {};
@@ -1106,7 +1110,14 @@
           geminiMessage: responseData.geminiMessage,
           originalError: error
         });
-        renderReportError(target, displayedRequestId, reportType);
+        const errorInfo = {
+          httpStatus: Number(responseData.httpStatus || responseStatus) || null,
+          requestId: displayedRequestId,
+          error: responseData.error || error.message,
+          geminiMessage: responseData.geminiMessage
+        };
+        const handled = typeof onError === 'function' && onError(errorInfo) === true;
+        if (!handled) renderReportError(target, displayedRequestId, reportType);
       } finally {
         clearTimeout(timeout);
         stopLoading();
@@ -1185,11 +1196,22 @@
       return startDate && endDate ? reportCacheRepository.get(getPeriodCacheKey(startDate, endDate)) : null;
     }
 
-    function updateReportCacheUi(cache) {
+    function updateReportCacheUi(cache, state = cache ? 'cache' : 'empty') {
       document.getElementById('report-analyzed-at').textContent = cache?.generatedAt
         ? `最終分析　${formatUpdatedAt(cache.generatedAt)}`
         : '';
-      document.getElementById('generate-period-report').textContent = cache ? '再分析する' : 'AI分析を開始する';
+      const status = document.getElementById('report-cache-status');
+      status.className = 'report-cache-status';
+      status.textContent = ({
+        latest: '最新',
+        cache: 'キャッシュ表示',
+        updating: '更新中…',
+        empty: '未分析',
+        failed: '更新失敗',
+        stale: '更新失敗（前回結果表示中）\n\nAIサービスが混雑しています。\n前回成功した分析結果を表示しています。'
+      })[state] || '';
+      if (state === 'stale') status.classList.add('is-warning');
+      document.getElementById('generate-period-report').textContent = '再分析する';
     }
 
     function renderPeriodReport(reportType) {
@@ -1208,7 +1230,7 @@
         if (cache) renderStructuredReport(cache, target);
         else {
           target.className = 'ai-report-content';
-          target.textContent = '開始日と終了日を選んで分析してください。';
+          target.textContent = 'まだ分析されていません';
         }
         return;
       }
@@ -1237,14 +1259,12 @@
 
       if (!records.length) {
         target.className = 'ai-report-content';
-        target.textContent = 'まだ記録がありません';
+        target.textContent = 'まだ分析されていません';
         return;
       }
 
       target.className = 'ai-report-content';
-      target.textContent = reportType === 'daily' && !records.some(record => record.date === getTodayDate())
-        ? '今日の記録はまだありません。'
-        : '「AI分析を開始する」を押すと分析結果が表示されます。';
+      target.textContent = 'まだ分析されていません';
     }
 
     async function generatePeriodReport(reportType = currentPeriod) {
@@ -1292,22 +1312,37 @@
       const cacheKey = reportType === 'custom'
         ? getPeriodCacheKey(startDate, endDate)
         : REPORT_CACHE_KEYS[reportType];
+      const previousCache = reportCacheRepository.get(cacheKey);
       lastReportRequest = reportType;
       const generateButton = document.getElementById('generate-period-report');
       generateButton.disabled = true;
+      updateReportCacheUi(previousCache, 'updating');
       try {
         await requestAiReport({
           reportType,
           records: records.map(toAnalysisRecord),
           target,
+          preserveContent: Boolean(previousCache),
           onSuccess: report => {
-          const cache = reportCacheRepository.set(cacheKey, report, period);
-          if (!cache) throw new Error('AI分析キャッシュを保存できませんでした。');
-          reportHistoryRepository.add(report, period);
-          renderReportHistory();
-          if (reportType === 'custom') customReport = cache;
-            updateReportCacheUi(cache);
+            const cache = reportCacheRepository.set(cacheKey, report, period);
+            if (!cache) throw new Error('AI分析キャッシュを保存できませんでした。');
+            reportHistoryRepository.add(report, period);
+            renderReportHistory();
+            if (reportType === 'custom') customReport = cache;
+            updateReportCacheUi(cache, 'latest');
             renderStructuredReport(cache, target);
+          },
+          onError: errorInfo => {
+            if (![429, 503].includes(errorInfo.httpStatus)) return false;
+            if (previousCache) {
+              updateReportCacheUi(previousCache, 'stale');
+              renderStructuredReport(previousCache, target);
+            } else {
+              updateReportCacheUi(null, 'failed');
+              target.className = 'ai-report-content is-error';
+              target.textContent = 'AIサービスが混雑しています。\n\nまだ分析結果はありません。\n\n時間をおいて再分析してください。';
+            }
+            return true;
           }
         });
       } finally {
