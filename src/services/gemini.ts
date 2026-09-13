@@ -1,5 +1,5 @@
 // モデル変更はこの定数だけで行えるようにします。
-export const GEMINI_MODEL = 'gemini-3.8-flash';
+export const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS_MS = [1000, 2000, 4000] as const;
