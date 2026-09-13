@@ -329,8 +329,8 @@
   </main>
   <div class="modal-backdrop" id="import-modal" hidden>
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
-      <h2 id="import-modal-title">サンプル日記を貼り付けてください。</h2>
-      <p>「6/2（月）」のような日付ごとに、複数の日記をまとめて取り込めます。</p>
+      <h2 id="import-modal-title">取り込みたい日記を貼り付けてください。</h2>
+      <p>日付ごとに複数の日記をまとめて取り込めます。</p>
       <textarea id="import-text" placeholder="6/2（月）&#10;今日は資料を仕上げた。&#10;&#10;6/3（火）&#10;帰宅後に30分勉強した。"></textarea>
       <p class="import-feedback" id="import-feedback" role="alert"></p>
       <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-import>キャンセル</button><button class="btn btn-primary" type="button" id="import-records-button">取り込む</button></div>
@@ -599,6 +599,7 @@
       const entries = [];
       const lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
       const currentYear = new Date().getFullYear();
+      const dateLinePattern = /^(?:(\d{4})\s*[/-]\s*)?(\d{1,2})\s*[/-]\s*(\d{1,2})(?:\s*[（(]\s*[^）)]*\s*[）)])?\s*$/;
       let activeDate = '';
       let bodyLines = [];
 
@@ -609,7 +610,7 @@
       };
 
       lines.forEach(line => {
-        const match = line.trim().match(/^(?:(\d{4})[/.\-])?(\d{1,2})[/.\-](\d{1,2})(?:\s*[（(][^）)]*[）)])?\s*$/);
+        const match = line.trim().match(dateLinePattern);
         if (!match) {
           if (activeDate) bodyLines.push(line);
           return;
@@ -1156,7 +1157,7 @@
         const source = document.getElementById('import-text').value;
         const count = importSampleDiaries(source);
         if (!count) {
-          feedback.textContent = '日付と日記本文を確認してください。';
+          feedback.textContent = '日付を認識できませんでした。例：6/2（月）';
           return;
         }
         document.getElementById('import-text').value = '';
