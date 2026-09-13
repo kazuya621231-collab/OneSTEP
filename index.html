@@ -235,6 +235,17 @@
     .detail-tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .detail-tag { padding: 8px 12px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); font-size: 13px; font-weight: 700; }
     .detail-mood { font-size: 25px; line-height: 1; }
+    .history-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 14px; }
+    .history-header .list-heading { margin: 0; }
+    .history-clear { border: 0; background: transparent; color: #914b47; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .history-list { display: grid; gap: 11px; }
+    .history-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 16px 14px 14px 17px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+    .history-open { min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+    .history-type { display: inline-block; margin-bottom: 6px; color: var(--primary-dark); font-size: 13px; font-weight: 800; }
+    .history-meta { display: block; margin-bottom: 7px; color: var(--muted); font-size: 11px; }
+    .history-preview { display: -webkit-box; margin: 0; overflow: hidden; color: #566462; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .history-delete { align-self: start; width: 36px; height: 36px; border: 0; border-radius: 11px; background: #fff7f6; color: #914b47; font-size: 16px; cursor: pointer; }
+    .history-detail-meta { margin: -11px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.8; text-align: center; }
 
     .modal-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(25,43,41,.42); backdrop-filter: blur(3px); }
     .modal-backdrop[hidden] { display: none; }
@@ -343,6 +354,8 @@
       </section>
       <h2 class="list-heading">保存された記録一覧</h2>
       <div class="record-list" id="record-list"></div>
+      <div class="history-header"><h2 class="list-heading">AIレポート履歴</h2><button class="history-clear" id="clear-report-history" type="button">すべて削除</button></div>
+      <div class="history-list" id="report-history-list"></div>
     </section>
 
     <section class="screen" id="record-detail" aria-labelledby="record-detail-title">
@@ -350,6 +363,13 @@
       <p class="detail-date" id="detail-date"></p>
       <div id="detail-content"></div>
       <div class="actions"><button class="btn btn-primary" type="button" id="edit-record-button">編集</button><button class="btn btn-danger" type="button" id="delete-record-button">この記録を削除</button></div>
+    </section>
+
+    <section class="screen" id="report-history-detail" aria-labelledby="report-history-detail-title">
+      <header class="topbar"><button class="back" data-go="reports" aria-label="レポート一覧へ戻る">‹</button><h1 id="report-history-detail-title">AIレポート履歴</h1><span></span></header>
+      <p class="history-detail-meta" id="history-detail-meta"></p>
+      <div class="ai-report-content" id="history-detail-content"></div>
+      <div class="actions"><button class="btn btn-danger" type="button" id="delete-history-detail">この履歴を削除</button></div>
     </section>
   </main>
   <div class="modal-backdrop" id="import-modal" hidden>
@@ -365,6 +385,7 @@
 
   <script>
     const STORAGE_KEY = 'oneStepRecords';
+    const REPORT_HISTORY_KEY = 'oneStepReportHistory';
     const REPORT_CACHE_KEYS = {
       daily: 'oneStepDailyReport',
       weekly: 'oneStepWeeklyReport',
@@ -393,6 +414,7 @@
     let currentPeriod = 'daily';
     let lastReportRequest = null;
     let selectedRecordId = null;
+    let selectedReportHistoryId = null;
     let customReport = null;
     const reportControllers = new WeakMap();
 
@@ -486,6 +508,57 @@
           localStorage.removeItem(key);
         } catch (error) {
           console.error('AI分析キャッシュの削除に失敗しました。', { key, error });
+        }
+      }
+    };
+
+    // キャッシュとは分離し、再分析しても過去結果を残します。
+    const reportHistoryRepository = {
+      getAll() {
+        try {
+          const value = JSON.parse(localStorage.getItem(REPORT_HISTORY_KEY) || '[]');
+          return Array.isArray(value) ? value : [];
+        } catch (error) {
+          console.error('AIレポート履歴の読み込みに失敗しました。', error);
+          return [];
+        }
+      },
+      add(report, period) {
+        try {
+          const entry = {
+            id: generateId(),
+            reportType: period.type,
+            period: { start: period.start, end: period.end },
+            summary: report.summary || '',
+            detail: report.detail || report.aiReport || '',
+            generatedAt: new Date().toISOString()
+          };
+          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify([entry, ...this.getAll()]));
+          return entry;
+        } catch (error) {
+          console.error('AIレポート履歴の保存に失敗しました。', error);
+          return null;
+        }
+      },
+      findById(id) {
+        return this.getAll().find(entry => entry.id === id) || null;
+      },
+      remove(id) {
+        try {
+          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(this.getAll().filter(entry => entry.id !== id)));
+          return true;
+        } catch (error) {
+          console.error('AIレポート履歴の削除に失敗しました。', error);
+          return false;
+        }
+      },
+      clear() {
+        try {
+          localStorage.removeItem(REPORT_HISTORY_KEY);
+          return true;
+        } catch (error) {
+          console.error('AIレポート履歴の一括削除に失敗しました。', error);
+          return false;
         }
       }
     };
@@ -648,6 +721,7 @@
         id: baseRecord?.id || generateId(),
         date: selectedDate,
         ...formData,
+        title: baseRecord?.title || '',
         aiReport: contentChanged ? '' : baseRecord?.aiReport || '',
         aiReportSummary: contentChanged ? '' : baseRecord?.aiReportSummary || '',
         aiTitle: contentChanged ? '' : baseRecord?.aiTitle || '',
@@ -1060,6 +1134,7 @@
           if (!saveGeneratedReport(aiReport, aiTitle, summary)) throw new Error('生成したAIレポートを保存できませんでした。');
           const report = { aiReport, aiTitle, summary, detail };
           reportCacheRepository.set(REPORT_CACHE_KEYS.daily, report, { type: 'daily', start: today.date, end: today.date });
+          reportHistoryRepository.add(report, { type: 'daily', start: today.date, end: today.date });
           renderStructuredReport(report, target);
         }
       });
@@ -1226,9 +1301,11 @@
           records: records.map(toAnalysisRecord),
           target,
           onSuccess: report => {
-            const cache = reportCacheRepository.set(cacheKey, report, period);
-            if (!cache) throw new Error('AI分析キャッシュを保存できませんでした。');
-            if (reportType === 'custom') customReport = cache;
+          const cache = reportCacheRepository.set(cacheKey, report, period);
+          if (!cache) throw new Error('AI分析キャッシュを保存できませんでした。');
+          reportHistoryRepository.add(report, period);
+          renderReportHistory();
+          if (reportType === 'custom') customReport = cache;
             updateReportCacheUi(cache);
             renderStructuredReport(cache, target);
           }
@@ -1236,6 +1313,87 @@
       } finally {
         generateButton.disabled = false;
       }
+    }
+
+    function getRecordListTitle(record) {
+      const savedTitle = typeof record.title === 'string' ? record.title.trim() : '';
+      if (savedTitle) return savedTitle;
+      const diary = String(record.diary || '').replace(/\s+/g, ' ').trim();
+      if (!diary) return '自由記述なし';
+      return diary.length > 20 ? `${diary.slice(0, 20)}…` : diary;
+    }
+
+    function getReportTypeLabel(reportType) {
+      return ({ daily: '今日', weekly: '今週', monthly: '今月', custom: '期間指定' })[reportType] || '期間指定';
+    }
+
+    function formatHistoryPeriod(entry) {
+      const start = formatRecordDate(entry.period?.start);
+      const end = formatRecordDate(entry.period?.end);
+      return start === end ? start : `${start}〜${end}`;
+    }
+
+    function plainReportPreview(markdown) {
+      return String(markdown || '')
+        .replace(/^#{1,6}\s+/gm, '')
+        .replace(/^[-*]\s+/gm, '')
+        .replace(/\*\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim() || 'レポート本文なし';
+    }
+
+    function renderReportHistory() {
+      const list = document.getElementById('report-history-list');
+      const clearButton = document.getElementById('clear-report-history');
+      const entries = reportHistoryRepository.getAll()
+        .sort((a, b) => String(b.generatedAt || '').localeCompare(String(a.generatedAt || '')));
+      list.replaceChildren();
+      clearButton.hidden = !entries.length;
+
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-records';
+        empty.textContent = 'AIレポート履歴はまだありません';
+        list.append(empty);
+        return;
+      }
+
+      entries.forEach(entry => {
+        const card = document.createElement('article');
+        const open = document.createElement('button');
+        const type = document.createElement('strong');
+        const meta = document.createElement('span');
+        const preview = document.createElement('p');
+        const remove = document.createElement('button');
+        card.className = 'history-card';
+        open.type = 'button';
+        open.className = 'history-open';
+        open.dataset.historyId = entry.id;
+        type.className = 'history-type';
+        type.textContent = getReportTypeLabel(entry.reportType);
+        meta.className = 'history-meta';
+        meta.textContent = `${formatHistoryPeriod(entry)}　${formatUpdatedAt(entry.generatedAt)}`;
+        preview.className = 'history-preview';
+        preview.textContent = plainReportPreview(entry.summary || entry.detail);
+        remove.type = 'button';
+        remove.className = 'history-delete';
+        remove.dataset.deleteHistoryId = entry.id;
+        remove.setAttribute('aria-label', `${getReportTypeLabel(entry.reportType)}の履歴を削除`);
+        remove.textContent = '×';
+        open.append(type, meta, preview);
+        card.append(open, remove);
+        list.append(card);
+      });
+    }
+
+    function renderReportHistoryDetail(historyId) {
+      const entry = reportHistoryRepository.findById(historyId);
+      selectedReportHistoryId = entry?.id || null;
+      if (!entry) return false;
+      document.getElementById('report-history-detail-title').textContent = `${getReportTypeLabel(entry.reportType)}のAIレポート`;
+      document.getElementById('history-detail-meta').textContent = `${formatHistoryPeriod(entry)}\n最終分析　${formatUpdatedAt(entry.generatedAt)}`;
+      renderStructuredReport(entry, document.getElementById('history-detail-content'));
+      return true;
     }
 
     // LocalStorageの記録を日付降順で一覧へ描画します。
@@ -1285,7 +1443,7 @@
         arrow.className = 'arrow';
         arrow.textContent = '›';
         title.className = 'record-title';
-        title.textContent = record.aiTitle || '今日の振り返り';
+        title.textContent = getRecordListTitle(record);
         meta.className = 'record-meta';
         rating.className = 'record-rating';
         const satisfaction = Math.max(0, Math.min(5, Number(record.satisfaction) || 0));
@@ -1393,6 +1551,7 @@
       if (id === 'home') renderHomeStats();
       if (id === 'reports') {
         renderRecordList();
+        renderReportHistory();
         renderPeriodReport(currentPeriod);
       }
       if (id === 'ai-report' && currentRecord?.aiReport) renderStructuredReport({ summary: currentRecord.aiReportSummary, detail: currentRecord.aiReport });
@@ -1459,6 +1618,43 @@
         return;
       }
 
+      const historyDeleteButton = event.target.closest('[data-delete-history-id]');
+      if (historyDeleteButton) {
+        if (!window.confirm('このAIレポート履歴を削除しますか？')) return;
+        if (!reportHistoryRepository.remove(historyDeleteButton.dataset.deleteHistoryId)) {
+          showToast('履歴を削除できませんでした');
+          return;
+        }
+        if (selectedReportHistoryId === historyDeleteButton.dataset.deleteHistoryId) selectedReportHistoryId = null;
+        renderReportHistory();
+        showToast('AIレポート履歴を削除しました');
+        return;
+      }
+
+      if (event.target.closest('#clear-report-history')) {
+        if (!window.confirm('AIレポート履歴をすべて削除しますか？')) return;
+        if (!reportHistoryRepository.clear()) {
+          showToast('履歴を削除できませんでした');
+          return;
+        }
+        selectedReportHistoryId = null;
+        renderReportHistory();
+        showToast('AIレポート履歴をすべて削除しました');
+        return;
+      }
+
+      if (event.target.closest('#delete-history-detail')) {
+        if (!selectedReportHistoryId || !window.confirm('このAIレポート履歴を削除しますか？')) return;
+        if (!reportHistoryRepository.remove(selectedReportHistoryId)) {
+          showToast('履歴を削除できませんでした');
+          return;
+        }
+        selectedReportHistoryId = null;
+        showToast('AIレポート履歴を削除しました');
+        showScreen('reports');
+        return;
+      }
+
       const retryButton = event.target.closest('[data-retry-report]');
       if (retryButton) {
         if (retryButton.dataset.retryReport === 'daily' && !retryButton.closest('#period-report-content')) generateAiReport();
@@ -1475,6 +1671,12 @@
       if (recordCard) {
         renderRecordDetail(recordCard.dataset.recordId);
         showScreen('record-detail');
+        return;
+      }
+
+      const historyCard = event.target.closest('[data-history-id]');
+      if (historyCard) {
+        if (renderReportHistoryDetail(historyCard.dataset.historyId)) showScreen('report-history-detail');
         return;
       }
 
