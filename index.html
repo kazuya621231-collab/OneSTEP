@@ -144,14 +144,13 @@
     .chip input:checked + span { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
     .chip input:focus-visible + span { outline: 3px solid rgba(50,107,103,.18); }
 
-    input[type="text"], textarea {
+    input[type="text"], input[type="date"], textarea {
       width: 100%; border: 1px solid var(--line); border-radius: 15px; background: #fafcfb;
       padding: 15px; color: var(--text); outline: none; resize: vertical; line-height: 1.7;
     }
-    input[type="text"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(50,107,103,.1); background: white; }
+    input[type="text"]:focus, input[type="date"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(50,107,103,.1); background: white; }
     textarea { min-height: 138px; }
     textarea.event-area { min-height: 92px; }
-    textarea.import-area { min-height: 270px; }
     ::placeholder { color: #a5b0ae; }
 
     .actions { display: grid; gap: 11px; margin-top: 26px; }
@@ -219,7 +218,14 @@
     .detail-tag { padding: 8px 12px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); font-size: 13px; font-weight: 700; }
     .detail-mood { font-size: 25px; line-height: 1; }
 
-    .import-info { padding: 21px; margin-bottom: 17px; border-radius: 20px; background: var(--surface-soft); color: #47615e; font-size: 14px; line-height: 1.9; }
+    .modal-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(25,43,41,.42); backdrop-filter: blur(3px); }
+    .modal-backdrop[hidden] { display: none; }
+    .modal-card { width: min(100%, 436px); max-height: calc(100vh - 44px); overflow-y: auto; padding: 24px 20px 20px; border-radius: 24px; background: var(--surface); box-shadow: 0 24px 70px rgba(25,43,41,.22); }
+    .modal-card h2 { margin: 0 0 8px; font-size: 20px; }
+    .modal-card p { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .modal-card textarea { min-height: 250px; }
+    .modal-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 18px; }
+    .import-feedback { min-height: 20px; margin: 10px 2px 0 !important; color: #914b47 !important; }
     .toast { position: fixed; z-index: 20; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); width: max-content; max-width: calc(100% - 44px); padding: 13px 18px; border-radius: 14px; background: #243634; color: white; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; box-shadow: var(--shadow); }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -251,9 +257,9 @@
         <div class="stat-card"><strong id="latest-date">—</strong><small>最新記録日</small></div>
       </div>
       <nav class="home-menu" aria-label="メインメニュー">
-        <button class="menu-card" data-go="record-step1"><span class="menu-icon">✎</span><span class="menu-copy"><strong>今日の記録</strong><small>寝る前5分の振り返り</small></span><span class="arrow">›</span></button>
+        <button class="menu-card" id="open-today-record" type="button"><span class="menu-icon">✎</span><span class="menu-copy"><strong>今日の記録</strong><small>寝る前5分の振り返り</small></span><span class="arrow">›</span></button>
         <button class="menu-card" data-go="reports"><span class="menu-icon">▥</span><span class="menu-copy"><strong>レポート</strong><small>これまでの歩みを見る</small></span><span class="arrow">›</span></button>
-        <button class="menu-card" data-go="import"><span class="menu-icon">＋</span><span class="menu-copy"><strong>日記を取り込む</strong><small>過去の日記をまとめて追加</small></span><span class="arrow">›</span></button>
+        <button class="menu-card" id="open-import-modal" type="button"><span class="menu-icon">＋</span><span class="menu-copy"><strong>日記を取り込む</strong><small>過去の日記をまとめて追加</small></span><span class="arrow">›</span></button>
       </nav>
     </section>
 
@@ -262,6 +268,7 @@
       <div class="step-track" aria-label="ステップ1 / 2"><span class="step-dot active">1</span><span class="step-line"></span><span class="step-dot">2</span></div>
       <p class="record-updated" data-last-updated aria-live="polite"></p>
       <div class="intro"><h2 id="step1-title">今日を思い出す</h2><p>まずは、今日あったことを気軽に教えてください。</p></div>
+      <label class="section-card" style="display:block"><span class="section-title">📅 振り返る日</span><input type="date" data-record-date aria-label="振り返る日"></label>
       <div class="section-card">
         <span class="section-title">行動チェック</span>
         <div class="option-grid">
@@ -317,16 +324,18 @@
       <header class="topbar"><button class="back" data-go="reports" aria-label="レポート一覧へ戻る">‹</button><h1 id="record-detail-title">記録の詳細</h1><span></span></header>
       <p class="detail-date" id="detail-date"></p>
       <div id="detail-content"></div>
-      <div class="actions"><button class="btn btn-danger" type="button" id="delete-record-button">この記録を削除</button></div>
-    </section>
-
-    <section class="screen" id="import" aria-labelledby="import-title">
-      <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="import-title">日記を取り込む</h1><span></span></header>
-      <div class="import-info">過去の日記を貼り付けることで、<br>AIが分析できるようになります。</div>
-      <label class="section-card" style="display:block"><span class="section-title">日記を貼り付ける</span><textarea class="import-area" placeholder="2026/6/2&#10;&#10;今日は…"></textarea></label>
-      <div class="actions"><button class="btn btn-primary" data-dummy="日記の取り込み">日記を取り込む</button></div>
+      <div class="actions"><button class="btn btn-primary" type="button" id="edit-record-button">編集</button><button class="btn btn-danger" type="button" id="delete-record-button">この記録を削除</button></div>
     </section>
   </main>
+  <div class="modal-backdrop" id="import-modal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+      <h2 id="import-modal-title">サンプル日記を貼り付けてください。</h2>
+      <p>「6/2（月）」のような日付ごとに、複数の日記をまとめて取り込めます。</p>
+      <textarea id="import-text" placeholder="6/2（月）&#10;今日は資料を仕上げた。&#10;&#10;6/3（火）&#10;帰宅後に30分勉強した。"></textarea>
+      <p class="import-feedback" id="import-feedback" role="alert"></p>
+      <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-import>キャンセル</button><button class="btn btn-primary" type="button" id="import-records-button">取り込む</button></div>
+    </section>
+  </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -344,6 +353,8 @@
     const screens = [...document.querySelectorAll('.screen')];
     const toast = document.getElementById('toast');
     const recordFields = [...document.querySelectorAll('[data-record-field]')];
+    const recordDateInput = document.querySelector('[data-record-date]');
+    const importModal = document.getElementById('import-modal');
     let toastTimer;
     let autosaveTimer;
     let hasPendingAutosave = false;
@@ -380,15 +391,17 @@
       },
 
       upsert(record) {
+        return this.upsertMany([record]);
+      },
+
+      upsertMany(incomingRecords) {
         try {
           const records = this.getAll();
-          const recordIndex = records.findIndex(item => item.id === record.id);
-
-          if (recordIndex >= 0) {
-            records[recordIndex] = record;
-          } else {
-            records.push(record);
-          }
+          incomingRecords.forEach(record => {
+            const recordIndex = records.findIndex(item => item.id === record.id);
+            if (recordIndex >= 0) records[recordIndex] = record;
+            else records.push(record);
+          });
 
           localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
           return true;
@@ -496,6 +509,7 @@
       isHydrating = true;
       setCheckedValues('actions', record.actions);
       setCheckedValues('effort', record.effort);
+      recordDateInput.value = record.date || getTodayDate();
       document.querySelector('[data-record-field="todayEvent"]').value = record.todayEvent || '';
       document.querySelector('[data-record-field="diary"]').value = record.diary || '';
       document.querySelector('[data-record-field="tomorrowStep"]').value = record.tomorrowStep || '';
@@ -518,6 +532,7 @@
         if (field.type === 'checkbox' || field.type === 'radio') field.checked = false;
         else field.value = '';
       });
+      recordDateInput.value = getTodayDate();
       updateLastUpdatedDisplay(null);
       isHydrating = false;
     }
@@ -525,14 +540,33 @@
     // status指定がない自動保存では、現在のステータスを維持します。
     function saveRecord(statusOverride = null) {
       const now = new Date().toISOString();
+      const selectedDate = recordDateInput.value || getTodayDate();
+      const dateConflict = recordRepository.findByDate(selectedDate);
+      if (currentRecord && dateConflict && dateConflict.id !== currentRecord.id) {
+        recordDateInput.value = currentRecord.date;
+        showToast('選択した日付にはすでに記録があります');
+        return false;
+      }
+      const baseRecord = currentRecord || recordRepository.findByDate(selectedDate);
+      const formData = collectFormData();
+      const contentChanged = Boolean(baseRecord) && (
+        baseRecord.date !== selectedDate
+        || baseRecord.todayEvent !== formData.todayEvent
+        || baseRecord.diary !== formData.diary
+        || baseRecord.mood !== formData.mood
+        || Number(baseRecord.satisfaction) !== formData.satisfaction
+        || baseRecord.tomorrowStep !== formData.tomorrowStep
+        || JSON.stringify(baseRecord.actions || []) !== JSON.stringify(formData.actions)
+        || JSON.stringify(baseRecord.effort || []) !== JSON.stringify(formData.effort)
+      );
       const record = {
-        id: currentRecord?.id || generateId(),
-        date: currentRecord?.date || getTodayDate(),
-        ...collectFormData(),
-        aiReport: currentRecord?.aiReport || '',
-        aiTitle: currentRecord?.aiTitle || '',
-        status: statusOverride || currentRecord?.status || 'draft',
-        createdAt: currentRecord?.createdAt || now,
+        id: baseRecord?.id || generateId(),
+        date: selectedDate,
+        ...formData,
+        aiReport: contentChanged ? '' : baseRecord?.aiReport || '',
+        aiTitle: contentChanged ? '' : baseRecord?.aiTitle || '',
+        status: statusOverride || baseRecord?.status || 'draft',
+        createdAt: baseRecord?.createdAt || now,
         updatedAt: now
       };
 
@@ -559,6 +593,101 @@
       toast.textContent = message;
       toast.classList.add('show');
       toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function parseSampleDiaries(source) {
+      const entries = [];
+      const lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
+      const currentYear = new Date().getFullYear();
+      let activeDate = '';
+      let bodyLines = [];
+
+      const commitEntry = () => {
+        const diary = bodyLines.join('\n').trim();
+        if (activeDate && diary) entries.push({ date: activeDate, diary });
+        bodyLines = [];
+      };
+
+      lines.forEach(line => {
+        const match = line.trim().match(/^(?:(\d{4})[/.\-])?(\d{1,2})[/.\-](\d{1,2})(?:\s*[（(][^）)]*[）)])?\s*$/);
+        if (!match) {
+          if (activeDate) bodyLines.push(line);
+          return;
+        }
+
+        const year = Number(match[1] || currentYear);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const candidate = new Date(year, month - 1, day);
+        if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) return;
+
+        commitEntry();
+        activeDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      });
+      commitEntry();
+
+      const uniqueEntries = new Map();
+      entries.forEach(entry => uniqueEntries.set(entry.date, entry));
+      return [...uniqueEntries.values()];
+    }
+
+    function importSampleDiaries(source) {
+      const entries = parseSampleDiaries(source);
+      if (!entries.length) return 0;
+      const now = new Date().toISOString();
+      const records = entries.map(entry => {
+        const existing = recordRepository.findByDate(entry.date);
+        return {
+          ...(existing || {}),
+          id: existing?.id || generateId(),
+          date: entry.date,
+          actions: existing?.actions || [],
+          todayEvent: existing?.todayEvent || '',
+          diary: entry.diary,
+          mood: existing?.mood || '',
+          satisfaction: Number(existing?.satisfaction) || 0,
+          effort: existing?.effort || [],
+          tomorrowStep: existing?.tomorrowStep || '',
+          aiReport: '',
+          aiTitle: '',
+          status: existing?.status || 'completed',
+          createdAt: existing?.createdAt || now,
+          updatedAt: now
+        };
+      });
+      return recordRepository.upsertMany(records) ? records.length : 0;
+    }
+
+    function openImportModal() {
+      document.getElementById('import-feedback').textContent = '';
+      importModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      document.getElementById('import-text').focus();
+    }
+
+    function closeImportModal() {
+      importModal.hidden = true;
+      document.body.style.overflow = '';
+      document.getElementById('open-import-modal').focus();
+    }
+
+    function openTodayRecord() {
+      currentRecord = recordRepository.findByDate(getTodayDate());
+      clearForm();
+      if (currentRecord) hydrateForm(currentRecord);
+      showScreen('record-step1');
+    }
+
+    function editSelectedRecord() {
+      const record = recordRepository.findById(selectedRecordId);
+      if (!record) {
+        showToast('編集する記録が見つかりません');
+        return;
+      }
+      currentRecord = record;
+      clearForm();
+      hydrateForm(record);
+      showScreen('record-step1');
     }
 
     function appendInlineMarkdown(element, text) {
@@ -963,6 +1092,7 @@
       detailContent.replaceChildren();
       selectedRecordId = record?.id || null;
       document.getElementById('delete-record-button').hidden = !record;
+      document.getElementById('edit-record-button').hidden = !record;
 
       if (!record) {
         detailDate.textContent = '';
@@ -1006,6 +1136,44 @@
     }
 
     document.addEventListener('click', event => {
+      if (event.target.closest('#open-today-record')) {
+        openTodayRecord();
+        return;
+      }
+
+      if (event.target.closest('#open-import-modal')) {
+        openImportModal();
+        return;
+      }
+
+      if (event.target.closest('[data-close-import]') || event.target === importModal) {
+        closeImportModal();
+        return;
+      }
+
+      if (event.target.closest('#import-records-button')) {
+        const feedback = document.getElementById('import-feedback');
+        const source = document.getElementById('import-text').value;
+        const count = importSampleDiaries(source);
+        if (!count) {
+          feedback.textContent = '日付と日記本文を確認してください。';
+          return;
+        }
+        document.getElementById('import-text').value = '';
+        currentRecord = recordRepository.findByDate(getTodayDate());
+        clearForm();
+        if (currentRecord) hydrateForm(currentRecord);
+        closeImportModal();
+        renderHomeStats();
+        showToast(`${count}件の日記を取り込みました。`);
+        return;
+      }
+
+      if (event.target.closest('#edit-record-button')) {
+        editSelectedRecord();
+        return;
+      }
+
       if (event.target.closest('#delete-record-button')) {
         if (!selectedRecordId || !window.confirm('この記録を削除しますか？')) return;
         const deletingCurrentRecord = currentRecord?.id === selectedRecordId;
@@ -1054,11 +1222,6 @@
       const nav = event.target.closest('[data-go]');
       if (nav) showScreen(nav.dataset.go);
 
-      const dummy = event.target.closest('[data-dummy]');
-      if (dummy) {
-        showToast(`${dummy.dataset.dummy}は現在ダミーです`);
-      }
-
       const period = event.target.closest('.period-card');
       if (period) {
         document.querySelectorAll('.period-card').forEach(button => button.classList.remove('active'));
@@ -1071,6 +1234,11 @@
       field.addEventListener('input', scheduleAutosave);
       field.addEventListener('change', scheduleAutosave);
     });
+    recordDateInput.addEventListener('change', scheduleAutosave);
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !importModal.hidden) closeImportModal();
+    });
 
     // ページを閉じる直前に、待機中の入力があれば同期的に保存します。
     window.addEventListener('pagehide', () => {
@@ -1082,6 +1250,7 @@
 
     window.addEventListener('popstate', event => showScreen(event.state?.screen || location.hash.slice(1) || 'home', false));
     currentRecord = recordRepository.findByDate(getTodayDate());
+    recordDateInput.value = getTodayDate();
     hydrateForm(currentRecord);
     renderHomeStats();
     const initial = document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
