@@ -225,7 +225,10 @@
     .report-cache-status { min-height: 0; margin: 0 0 10px; padding: 0; color: var(--primary-dark); font-size: 12px; font-weight: 700; line-height: 1.7; white-space: pre-line; }
     .report-cache-status:empty { display: none; }
     .report-cache-status.is-warning { padding: 12px 14px; border: 1px solid #ead9bf; border-radius: 13px; background: #fffaf1; color: #866331; }
-    .report-generate-button { margin-top: 12px; }
+    .report-cache-status.is-updating { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 10px; padding: 11px 13px; border-radius: 13px; background: var(--primary-light); }
+    .loading-orbit.compact { width: 26px; height: 26px; margin: 0; border-width: 2px; }
+    .loading-orbit.compact::after { font-size: 10px; }
+    .report-generate-button { margin: 0 0 12px; }
     .custom-period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: -3px 0 20px; padding: 17px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
     .custom-period[hidden] { display: none; }
     .custom-period label { min-width: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
@@ -353,8 +356,8 @@
         <h2 class="period-report-heading" id="period-report-heading">今日のAIレポート</h2>
         <p class="report-analyzed-at" id="report-analyzed-at"></p>
         <p class="report-cache-status" id="report-cache-status" role="status" aria-live="polite"></p>
-        <div class="ai-report-content" id="period-report-content" aria-live="polite"></div>
         <button class="btn btn-primary report-generate-button" type="button" id="generate-period-report">再分析する</button>
+        <div class="ai-report-content" id="period-report-content" aria-live="polite"></div>
       </section>
       <h2 class="list-heading">保存された記録一覧</h2>
       <div class="record-list" id="record-list"></div>
@@ -1202,16 +1205,27 @@
         : '';
       const status = document.getElementById('report-cache-status');
       status.className = 'report-cache-status';
-      status.textContent = ({
+      const statusText = ({
         latest: '最新',
         cache: 'キャッシュ表示',
-        updating: '更新中…',
+        updating: '更新中\nAIが成長ポイントを探しています…',
         empty: '未分析',
         failed: '更新失敗',
         stale: '更新失敗（前回結果表示中）\n\nAIサービスが混雑しています。\n前回成功した分析結果を表示しています。'
       })[state] || '';
+      status.replaceChildren();
+      if (state === 'updating') {
+        const spinner = document.createElement('span');
+        const message = document.createElement('span');
+        spinner.className = 'loading-orbit compact';
+        message.textContent = statusText;
+        status.append(spinner, message);
+        status.classList.add('is-updating');
+      } else {
+        status.textContent = statusText;
+      }
       if (state === 'stale') status.classList.add('is-warning');
-      document.getElementById('generate-period-report').textContent = '再分析する';
+      document.getElementById('generate-period-report').textContent = cache ? '再分析する' : '分析を開始する';
     }
 
     function renderPeriodReport(reportType) {
@@ -1317,12 +1331,17 @@
       const generateButton = document.getElementById('generate-period-report');
       generateButton.disabled = true;
       updateReportCacheUi(previousCache, 'updating');
+      generateButton.textContent = '分析中...';
+      requestAnimationFrame(() => {
+        document.getElementById('report-cache-status').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       try {
+        await new Promise(resolve => setTimeout(resolve, 320));
         await requestAiReport({
           reportType,
           records: records.map(toAnalysisRecord),
           target,
-          preserveContent: Boolean(previousCache),
+          preserveContent: true,
           onSuccess: report => {
             const cache = reportCacheRepository.set(cacheKey, report, period);
             if (!cache) throw new Error('AI分析キャッシュを保存できませんでした。');
@@ -1333,7 +1352,10 @@
             renderStructuredReport(cache, target);
           },
           onError: errorInfo => {
-            if (![429, 503].includes(errorInfo.httpStatus)) return false;
+            if (![429, 503].includes(errorInfo.httpStatus)) {
+              updateReportCacheUi(previousCache, 'failed');
+              return false;
+            }
             if (previousCache) {
               updateReportCacheUi(previousCache, 'stale');
               renderStructuredReport(previousCache, target);
@@ -1347,6 +1369,7 @@
         });
       } finally {
         generateButton.disabled = false;
+        generateButton.textContent = reportCacheRepository.get(cacheKey) ? '再分析する' : '分析を開始する';
       }
     }
 
