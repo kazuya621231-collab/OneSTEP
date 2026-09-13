@@ -50,7 +50,7 @@
     .screen {
       display: none;
       min-height: 100vh;
-      padding: max(24px, env(safe-area-inset-top)) 22px calc(36px + env(safe-area-inset-bottom));
+      padding: max(22px, env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
       animation: enter .28s ease both;
     }
 
@@ -61,7 +61,7 @@
       background:
         radial-gradient(circle at 90% 4%, rgba(99, 159, 151, .17), transparent 28%),
         var(--bg);
-      padding-top: max(54px, env(safe-area-inset-top));
+      padding-top: max(46px, env(safe-area-inset-top));
     }
 
     .eyebrow {
@@ -81,7 +81,7 @@
     .tagline { margin: 16px 0 8px; font-size: 18px; line-height: 1.7; font-weight: 650; }
     .home-note { margin: 0; color: var(--muted); font-size: 13px; }
 
-    .home-menu { display: grid; gap: 14px; margin-top: 52px; }
+    .home-menu { display: grid; gap: 12px; margin-top: 42px; }
     .home-stats + .home-menu { margin-top: 24px; }
     .home-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 28px; }
     .stat-card { padding: 15px 7px; border: 1px solid rgba(50,107,103,.08); border-radius: 17px; background: var(--surface); box-shadow: 0 7px 20px rgba(41,72,68,.05); text-align: center; }
@@ -89,12 +89,12 @@
     .stat-card small { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; }
     .menu-card {
       width: 100%;
-      min-height: 104px;
+      min-height: 94px;
       border: 1px solid rgba(50, 107, 103, .08);
       border-radius: var(--radius);
       background: var(--surface);
       box-shadow: var(--shadow);
-      padding: 20px;
+      padding: 17px 18px;
       display: grid;
       grid-template-columns: 48px 1fr 24px;
       align-items: center;
@@ -111,26 +111,26 @@
     .menu-copy small { color: var(--muted); font-size: 12px; }
     .arrow { color: #9badaa; font-size: 22px; }
 
-    .topbar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; margin-bottom: 27px; }
+    .topbar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; margin-bottom: 23px; }
     .topbar h1 { margin: 0; text-align: center; font-size: 18px; }
     .back {
       width: 42px; height: 42px; border: 0; border-radius: 14px; background: var(--surface);
       color: var(--text); font-size: 24px; cursor: pointer; box-shadow: 0 5px 15px rgba(41,72,68,.06);
     }
 
-    .step-track { display: flex; align-items: center; margin: 4px 4px 28px; }
+    .step-track { display: flex; align-items: center; margin: 4px 4px 24px; }
     .step-dot { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--line); color: #81908e; font-size: 12px; font-weight: 800; }
     .step-dot.active { color: white; background: var(--primary); box-shadow: 0 5px 13px rgba(50,107,103,.22); }
     .step-line { height: 3px; flex: 1; background: var(--line); }
     .step-line.active { background: var(--primary); }
     .record-updated { min-height: 18px; margin: -17px 4px 22px; color: var(--muted); font-size: 12px; text-align: right; }
 
-    .intro { margin-bottom: 25px; }
+    .intro { margin-bottom: 20px; }
     .intro h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.02em; }
     .intro p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 
-    .section-card { margin-bottom: 17px; padding: 22px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-    .section-title { display: block; margin-bottom: 16px; font-size: 15px; font-weight: 750; }
+    .section-card { margin-bottom: 14px; padding: 19px 17px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .section-title { display: block; margin-bottom: 14px; font-size: 15px; font-weight: 750; }
     .section-subtitle { display: block; margin: -8px 0 15px; color: var(--muted); font-size: 12px; }
     .option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .option-grid.three { grid-template-columns: repeat(3, 1fr); }
@@ -149,7 +149,7 @@
       padding: 15px; color: var(--text); outline: none; resize: vertical; line-height: 1.7;
     }
     input[type="text"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(50,107,103,.1); background: white; }
-    textarea { min-height: 150px; }
+    textarea { min-height: 138px; }
     textarea.event-area { min-height: 92px; }
     textarea.import-area { min-height: 270px; }
     ::placeholder { color: #a5b0ae; }
@@ -161,6 +161,8 @@
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-secondary { color: var(--primary-dark); background: var(--primary-light); }
     .btn-ghost { color: var(--muted); background: transparent; border: 1px solid var(--line); }
+    .btn-danger { color: #914b47; background: #fff7f6; border: 1px solid #ecd5d2; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid rgba(50,107,103,.2); outline-offset: 2px; }
 
     .question-number { display: inline-grid; place-items: center; width: 27px; height: 27px; margin-right: 8px; border-radius: 9px; background: var(--surface-soft); color: var(--primary); font-size: 12px; }
     .mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
@@ -175,11 +177,6 @@
     .report-hero .spark { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 22px; border-radius: 15px; background: rgba(255,255,255,.14); font-size: 20px; }
     .report-hero h2 { margin: 0 0 8px; font-size: 24px; }
     .report-hero p { margin: 0; color: rgba(255,255,255,.75); font-size: 13px; line-height: 1.7; }
-    .report-sections { display: grid; gap: 12px; counter-reset: report; }
-    .report-item { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 14px; padding: 19px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
-    .report-item::before { counter-increment: report; content: counter(report, decimal-leading-zero); color: var(--primary); font-size: 12px; letter-spacing: .06em; }
-    .report-item h3 { margin: -2px 0 9px; font-size: 15px; }
-    .report-item p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.8; }
     .ai-report-content { padding: 22px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--muted); font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
     .ai-report-content h2 { margin: 25px 0 9px; color: var(--text); font-size: 17px; }
     .ai-report-content h2:first-child { margin-top: 0; }
@@ -231,6 +228,14 @@
       .app { min-height: calc(100vh - 36px); border-radius: 30px; box-shadow: 0 25px 70px rgba(31,55,52,.13); }
       .screen { min-height: calc(100vh - 36px); }
     }
+    @media (max-width: 380px) {
+      .screen { padding-right: 16px; padding-left: 16px; }
+      .option-grid.three { grid-template-columns: repeat(2, 1fr); }
+      .brand { font-size: 37px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -239,7 +244,7 @@
       <span class="eyebrow">5 MINUTES JOURNAL</span>
       <h1 class="brand" id="home-title">OneSTEP</h1>
       <p class="tagline">あなたの頑張りを、<br>AIが見つける。</p>
-      <p class="home-note">今日をやさしく振り返り、明日への一歩へ。</p>
+      <p class="home-note">5分で今日を振り返ろう。</p>
       <div class="home-stats" aria-label="記録状況">
         <div class="stat-card"><strong id="streak-count">0日</strong><small>連続記録日数</small></div>
         <div class="stat-card"><strong id="total-count">0件</strong><small>累計記録数</small></div>
@@ -312,6 +317,7 @@
       <header class="topbar"><button class="back" data-go="reports" aria-label="レポート一覧へ戻る">‹</button><h1 id="record-detail-title">記録の詳細</h1><span></span></header>
       <p class="detail-date" id="detail-date"></p>
       <div id="detail-content"></div>
+      <div class="actions"><button class="btn btn-danger" type="button" id="delete-record-button">この記録を削除</button></div>
     </section>
 
     <section class="screen" id="import" aria-labelledby="import-title">
@@ -345,6 +351,7 @@
     let currentRecord = null;
     let currentPeriod = 'daily';
     let lastReportRequest = null;
+    let selectedRecordId = null;
     const reportControllers = new WeakMap();
 
     /*
@@ -387,6 +394,17 @@
           return true;
         } catch (error) {
           console.error('記録の保存に失敗しました。', error);
+          return false;
+        }
+      },
+
+      remove(id) {
+        try {
+          const records = this.getAll().filter(record => record.id !== id);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+          return true;
+        } catch (error) {
+          console.error('記録の削除に失敗しました。', error);
           return false;
         }
       }
@@ -491,6 +509,16 @@
       if (satisfactionInput) satisfactionInput.checked = true;
 
       updateLastUpdatedDisplay(record.updatedAt);
+      isHydrating = false;
+    }
+
+    function clearForm() {
+      isHydrating = true;
+      recordFields.forEach(field => {
+        if (field.type === 'checkbox' || field.type === 'radio') field.checked = false;
+        else field.value = '';
+      });
+      updateLastUpdatedDisplay(null);
       isHydrating = false;
     }
 
@@ -622,32 +650,24 @@
       message.className = 'loading-message';
       target.append(spinner, message);
 
-      let lastIndex = -1;
+      let lastIndex = 0;
       const updateMessage = () => {
         let index;
         do index = Math.floor(Math.random() * ANALYSIS_MESSAGES.length); while (index === lastIndex);
         lastIndex = index;
         message.textContent = ANALYSIS_MESSAGES[index];
       };
-      updateMessage();
-      const interval = setInterval(updateMessage, 2600);
+      message.textContent = ANALYSIS_MESSAGES[0];
+      const interval = setInterval(updateMessage, 3200);
       return () => clearInterval(interval);
     }
 
-    function getErrorLabel(error, status, responseData) {
-      if (error?.name === 'AbortError') return '通信がタイムアウトしました';
-      if (!status) return '通信エラーが発生しました';
-      if (status >= 500) return 'AIサービスとの通信に失敗しました';
-      if (!responseData?.reply) return 'AIの応答を取得できませんでした';
-      return 'AIレポートの生成に失敗しました';
-    }
-
-    function renderReportError(target, message, requestId, retryType) {
+    function renderReportError(target, requestId, retryType) {
       target.replaceChildren();
       target.className = 'ai-report-content is-error';
       const text = document.createElement('p');
       const retry = document.createElement('button');
-      text.textContent = `${message}\nrequestId: ${requestId || '取得できませんでした'}`;
+      text.textContent = `AIサービスが混雑しています。\n時間をおいて再試行してください。\n\nrequestId: ${requestId || '取得できませんでした'}`;
       retry.type = 'button';
       retry.className = 'btn btn-secondary retry-button';
       retry.dataset.retryReport = retryType;
@@ -674,7 +694,6 @@
           records
         };
         if (reportType === 'daily') Object.assign(input, records[0] || collectFormData());
-        console.info('[AIレポート生成] リクエスト開始', { endpoint, reportType, recordCount: records.length });
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -717,11 +736,6 @@
         }
 
         if (!data.reply) throw new Error('AI_RESPONSE_MISSING');
-        console.info('[AIレポート生成] 通信成功', {
-          endpoint,
-          requestId: data.requestId,
-          model: data.model
-        });
         if (reportControllers.get(target) !== controller) return;
         const report = splitGeneratedReport(data.reply);
         onSuccess(report);
@@ -737,7 +751,7 @@
           geminiMessage: responseData.geminiMessage,
           originalError: error
         });
-        renderReportError(target, getErrorLabel(error, responseStatus, responseData), displayedRequestId, reportType);
+        renderReportError(target, displayedRequestId, reportType);
       } finally {
         clearTimeout(timeout);
         stopLoading();
@@ -947,6 +961,8 @@
       const detailDate = document.getElementById('detail-date');
       const detailContent = document.getElementById('detail-content');
       detailContent.replaceChildren();
+      selectedRecordId = record?.id || null;
+      document.getElementById('delete-record-button').hidden = !record;
 
       if (!record) {
         detailDate.textContent = '';
@@ -990,6 +1006,23 @@
     }
 
     document.addEventListener('click', event => {
+      if (event.target.closest('#delete-record-button')) {
+        if (!selectedRecordId || !window.confirm('この記録を削除しますか？')) return;
+        const deletingCurrentRecord = currentRecord?.id === selectedRecordId;
+        if (!recordRepository.remove(selectedRecordId)) {
+          showToast('記録を削除できませんでした');
+          return;
+        }
+        if (deletingCurrentRecord) {
+          currentRecord = null;
+          clearForm();
+        }
+        selectedRecordId = null;
+        showToast('記録を削除しました');
+        showScreen('reports');
+        return;
+      }
+
       const retryButton = event.target.closest('[data-retry-report]');
       if (retryButton) {
         if (retryButton.dataset.retryReport === 'daily') generateAiReport();

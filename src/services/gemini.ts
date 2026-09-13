@@ -70,12 +70,6 @@ function isRetryable(error: unknown): error is GeminiServiceError {
 }
 
 async function requestGemini(message: string, apiKey: string, endpoint: string): Promise<string> {
-  console.log('[Gemini Service] Gemini APIへの送信を開始', {
-    hasApiKey: true,
-    model: GEMINI_MODEL,
-    endpoint
-  });
-
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -89,15 +83,6 @@ async function requestGemini(message: string, apiKey: string, endpoint: string):
 
   const responseBody = await response.text();
   const payload = parseResponseBody(responseBody);
-
-  console.log('[Gemini Service] Gemini APIレスポンス全文', {
-    httpStatus: response.status,
-    statusText: response.statusText,
-    ok: response.ok,
-    responseHeaders: Object.fromEntries(response.headers.entries()),
-    responseBody,
-    parsedResponse: payload
-  });
 
   if (!response.ok) {
     throw new GeminiServiceError(
@@ -134,12 +119,6 @@ async function requestGemini(message: string, apiKey: string, endpoint: string):
 export async function sendMessageToGemini(message: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
 
-  console.log('[Gemini Service] APIリクエスト準備', {
-    hasApiKey: Boolean(apiKey),
-    model: GEMINI_MODEL,
-    requestStart: true
-  });
-
   if (!apiKey) {
     const error = new GeminiServiceError(
       'MISSING_API_KEY',
@@ -159,7 +138,7 @@ export async function sendMessageToGemini(message: string): Promise<string> {
   try {
     try {
       const reply = await requestGemini(message, apiKey, endpoint);
-      console.log('[Gemini Retry] 成功', { successfulAttempt: 0, totalRequests: 1 });
+      console.info('[Gemini] 成功', { successfulAttempt: 0, totalRequests: 1 });
       return reply;
     } catch (initialError) {
       if (!isRetryable(initialError)) throw initialError;
@@ -177,7 +156,7 @@ export async function sendMessageToGemini(message: string): Promise<string> {
 
         try {
           const reply = await requestGemini(message, apiKey, endpoint);
-          console.log('[Gemini Retry] 成功', {
+          console.info('[Gemini Retry] 成功', {
             successfulAttempt: attempt,
             totalRequests: attempt + 1
           });
