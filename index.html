@@ -599,7 +599,7 @@
       const entries = [];
       const lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
       const currentYear = new Date().getFullYear();
-      const dateLinePattern = /^(?:(\d{4})\s*[/-]\s*)?(\d{1,2})\s*[/-]\s*(\d{1,2})(?:\s*[（(]\s*[^）)]*\s*[）)])?\s*$/;
+      const dateLinePattern = /^(?:(\d{4})\s*[/-]\s*)?(\d{1,2})\s*[/-]\s*(\d{1,2})(?=\s|[（(]|$)(?:\s*[（(]\s*[^）)]*\s*[）)])?\s*(.*)$/;
       let activeDate = '';
       let bodyLines = [];
 
@@ -624,6 +624,7 @@
 
         commitEntry();
         activeDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (match[4]) bodyLines.push(match[4]);
       });
       commitEntry();
 
