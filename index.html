@@ -194,23 +194,30 @@
     [data-complete-record]:disabled { opacity: .65; cursor: wait; }
 
     .updated { margin: -13px 0 25px; color: var(--muted); font-size: 12px; text-align: center; }
-    .period-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 20px; }
+    .period-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-bottom: 20px; }
     .period-card { min-height: 62px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; }
     .period-card.active { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px rgba(50,107,103,.16); }
     .list-heading { margin: 0 0 14px; font-size: 16px; }
-    .record-list { display: grid; gap: 11px; }
-    .record { width: 100%; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .18s, box-shadow .18s; }
+    .record-list { display: grid; width: 100%; min-width: 0; gap: 11px; }
+    .record { display: block; width: 100%; min-width: 0; max-width: 100%; overflow: hidden; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .18s, box-shadow .18s; }
     .record:active { transform: scale(.985); box-shadow: 0 5px 15px rgba(41,72,68,.06); }
-    .record-date { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+    .record-date { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+    .record-date > span:first-child { min-width: 0; overflow-wrap: anywhere; }
     .record-date .arrow { line-height: 1; }
-    .record-title { display: block; margin-bottom: 8px; color: var(--text); font-size: 15px; font-weight: 750; }
-    .record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+    .record-title { display: block; max-width: 100%; margin-bottom: 8px; overflow: hidden; color: var(--text); font-size: 15px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .record-meta { display: flex; min-width: 0; max-width: 100%; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; overflow: hidden; }
     .record-rating { color: var(--accent); font-size: 13px; letter-spacing: 1px; }
     .record-category { padding: 4px 8px; border-radius: 8px; background: var(--primary-light); color: var(--primary-dark); font-size: 10px; font-weight: 700; }
-    .record p { margin: 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .record p { display: -webkit-box; max-width: 100%; margin: 0; overflow: hidden; color: var(--muted); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; word-break: break-word; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .period-report { margin-bottom: 28px; }
     .period-report[hidden] { display: none; }
     .period-report-heading { margin: 0 0 12px; font-size: 16px; }
+    .custom-period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: -3px 0 20px; padding: 17px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+    .custom-period[hidden] { display: none; }
+    .custom-period label { min-width: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .custom-period input { margin-top: 7px; padding: 11px 9px; font-size: 13px; }
+    .custom-period .btn { grid-column: 1 / -1; min-height: 49px; margin-top: 2px; }
+    .custom-period-error { grid-column: 1 / -1; min-height: 0; margin: 0; color: #914b47; font-size: 12px; }
     .empty-records { padding: 36px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; color: var(--muted); font-size: 14px; text-align: center; }
     .detail-date { margin: -11px 0 25px; color: var(--primary-dark); font-size: 20px; font-weight: 750; text-align: center; }
     .detail-value { margin: 0; color: #566462; font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -311,7 +318,13 @@
     <section class="screen" id="reports" aria-labelledby="reports-title">
       <header class="topbar"><button class="back" data-go="home" aria-label="ホームへ戻る">‹</button><h1 id="reports-title">レポート</h1><span></span></header>
       <p class="updated" id="reports-updated"></p>
-      <div class="period-grid" aria-label="表示期間"><button class="period-card active" data-period="daily">今日</button><button class="period-card" data-period="weekly">今週</button><button class="period-card" data-period="monthly">今月</button></div>
+      <div class="period-grid" aria-label="表示期間"><button class="period-card active" data-period="daily">今日</button><button class="period-card" data-period="weekly">今週</button><button class="period-card" data-period="monthly">今月</button><button class="period-card" data-period="custom">期間指定</button></div>
+      <div class="custom-period" id="custom-period-controls" hidden>
+        <label>開始日<input type="date" id="custom-start-date"></label>
+        <label>終了日<input type="date" id="custom-end-date"></label>
+        <p class="custom-period-error" id="custom-period-error" role="alert"></p>
+        <button class="btn btn-primary" type="button" id="generate-custom-report">この期間を分析</button>
+      </div>
       <section class="period-report" id="period-report">
         <h2 class="period-report-heading" id="period-report-heading">今日のAIレポート</h2>
         <div class="ai-report-content" id="period-report-content" aria-live="polite"></div>
@@ -363,6 +376,7 @@
     let currentPeriod = 'daily';
     let lastReportRequest = null;
     let selectedRecordId = null;
+    let customReport = '';
     const reportControllers = new WeakMap();
 
     /*
@@ -914,14 +928,6 @@
       button.disabled = false;
     }
 
-    function truncateText(text, maxLength = 40) {
-      const characters = Array.from(text || '');
-      if (!characters.length) return '自由記述はありません';
-      return characters.length > maxLength
-        ? `${characters.slice(0, maxLength).join('')}…`
-        : characters.join('');
-    }
-
     function renderHomeStats() {
       const records = recordRepository.getAll();
       const dates = [...new Set(records.map(record => record.date).filter(Boolean))].sort().reverse();
@@ -963,6 +969,18 @@
       currentPeriod = reportType;
       const target = document.getElementById('period-report-content');
       const heading = document.getElementById('period-report-heading');
+      const customControls = document.getElementById('custom-period-controls');
+      customControls.hidden = reportType !== 'custom';
+
+      if (reportType === 'custom') {
+        reportControllers.get(target)?.abort();
+        heading.textContent = '任意期間のAIレポート';
+        target.className = 'ai-report-content';
+        if (customReport) renderMarkdown(customReport, target);
+        else target.textContent = '開始日と終了日を選んで分析してください。';
+        return;
+      }
+
       const records = getPeriodRecords(reportType);
       heading.textContent = reportType === 'daily' ? '今日のAIレポート' : reportType === 'weekly' ? '今週のAIレポート' : '今月のAIレポート';
 
@@ -989,6 +1007,44 @@
         records: records.map(toAnalysisRecord),
         target,
         onSuccess: ({ aiReport }) => renderMarkdown(aiReport, target)
+      });
+    }
+
+    async function generateCustomPeriodReport() {
+      const startDate = document.getElementById('custom-start-date').value;
+      const endDate = document.getElementById('custom-end-date').value;
+      const error = document.getElementById('custom-period-error');
+      const target = document.getElementById('period-report-content');
+      error.textContent = '';
+
+      if (!startDate || !endDate) {
+        error.textContent = '開始日と終了日を選択してください。';
+        return;
+      }
+      if (startDate > endDate) {
+        error.textContent = '開始日は終了日以前の日付を選択してください。';
+        return;
+      }
+
+      const records = recordRepository.getAll()
+        .filter(record => record.date >= startDate && record.date <= endDate)
+        .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      if (!records.length) {
+        customReport = '';
+        target.className = 'ai-report-content';
+        target.textContent = 'この期間の記録はありません';
+        return;
+      }
+
+      lastReportRequest = 'custom';
+      await requestAiReport({
+        reportType: 'custom',
+        records: records.map(toAnalysisRecord),
+        target,
+        onSuccess: ({ aiReport }) => {
+          customReport = aiReport;
+          renderMarkdown(aiReport, target);
+        }
       });
     }
 
@@ -1033,7 +1089,9 @@
         card.dataset.recordId = record.id;
         card.setAttribute('aria-label', `${formatRecordDate(record.date)}の記録を開く`);
         heading.className = 'record-date';
-        headingText.textContent = `${formatRecordDate(record.date)}　${record.mood || '—'}`;
+        headingText.textContent = record.mood
+          ? `${formatRecordDate(record.date)}　${record.mood}`
+          : formatRecordDate(record.date);
         arrow.className = 'arrow';
         arrow.textContent = '›';
         title.className = 'record-title';
@@ -1049,7 +1107,7 @@
           tag.textContent = category;
           meta.append(tag);
         });
-        excerpt.textContent = truncateText(record.diary);
+        excerpt.textContent = record.diary || '自由記述はありません';
 
         heading.append(headingText, arrow);
         card.append(heading, title, meta, excerpt);
@@ -1196,7 +1254,13 @@
       const retryButton = event.target.closest('[data-retry-report]');
       if (retryButton) {
         if (retryButton.dataset.retryReport === 'daily') generateAiReport();
+        else if (retryButton.dataset.retryReport === 'custom') generateCustomPeriodReport();
         else renderPeriodReport(retryButton.dataset.retryReport || lastReportRequest);
+        return;
+      }
+
+      if (event.target.closest('#generate-custom-report')) {
+        generateCustomPeriodReport();
         return;
       }
 
@@ -1237,6 +1301,17 @@
       field.addEventListener('change', scheduleAutosave);
     });
     recordDateInput.addEventListener('change', scheduleAutosave);
+    ['custom-start-date', 'custom-end-date'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        customReport = '';
+        document.getElementById('custom-period-error').textContent = '';
+        if (currentPeriod === 'custom') {
+          const target = document.getElementById('period-report-content');
+          target.className = 'ai-report-content';
+          target.textContent = '開始日と終了日を選んで分析してください。';
+        }
+      });
+    });
 
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !importModal.hidden) closeImportModal();
@@ -1253,6 +1328,10 @@
     window.addEventListener('popstate', event => showScreen(event.state?.screen || location.hash.slice(1) || 'home', false));
     currentRecord = recordRepository.findByDate(getTodayDate());
     recordDateInput.value = getTodayDate();
+    document.getElementById('custom-end-date').value = getTodayDate();
+    const defaultStartDate = new Date(`${getTodayDate()}T00:00:00`);
+    defaultStartDate.setDate(defaultStartDate.getDate() - 6);
+    document.getElementById('custom-start-date').value = `${defaultStartDate.getFullYear()}-${String(defaultStartDate.getMonth() + 1).padStart(2, '0')}-${String(defaultStartDate.getDate()).padStart(2, '0')}`;
     hydrateForm(currentRecord);
     renderHomeStats();
     const initial = document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'home';

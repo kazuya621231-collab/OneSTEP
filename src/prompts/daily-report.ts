@@ -10,7 +10,7 @@ export interface JournalRecordInput {
   tomorrowStep?: string;
 }
 
-export type ReportType = 'daily' | 'weekly' | 'monthly';
+export type ReportType = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 export interface ReportRequestInput extends JournalRecordInput {
   reportType?: ReportType;
@@ -20,13 +20,15 @@ export interface ReportRequestInput extends JournalRecordInput {
 const REPORT_HEADINGS: Record<ReportType, string[]> = {
   daily: ['今日の総評', '客観的評価', '今日見えた傾向', '成長したこと', '明日の一歩'],
   weekly: ['今週の総評', '今週頑張ったことTOP3', '繰り返し見られた行動', '気分・満足度の変化', '来週へのアドバイス'],
-  monthly: ['今月の総評', '成長したこと', '習慣化できたこと', '課題', '来月への提案']
+  monthly: ['今月の総評', '成長したこと', '習慣化できたこと', '課題', '来月への提案'],
+  custom: ['期間の総評', '期間中に頑張ったこと', '繰り返し見られた行動', '気分・満足度の変化', '次の期間への提案']
 };
 
 const REPORT_STYLE_GUIDANCE: Record<ReportType, string> = {
   daily: 'その日の具体的な出来事に寄り添い、短く温度感のある振り返りにしてください。明日すぐ試せる小さな一歩で締めてください。',
   weekly: '一日ごとの列挙ではなく、1週間を俯瞰した変化や反復を中心にしてください。日次レポートとは異なる要約表現を使ってください。',
-  monthly: '長期的な変化、定着した行動、まだ整っていない点を俯瞰してください。週次レポートより広い視点で来月の方向性を示してください。'
+  monthly: '長期的な変化、定着した行動、まだ整っていない点を俯瞰してください。週次レポートより広い視点で来月の方向性を示してください。',
+  custom: '指定された開始日から終了日までを一つのまとまりとして捉え、期間の長さと記録件数に合った粒度で変化や反復をまとめてください。'
 };
 
 function text(value: unknown, maxLength = 1500): string {
@@ -82,11 +84,11 @@ function serializeRecord(record: JournalRecordInput): string {
 
 /** 日次・週次・月次で共通利用するOneSTEPの分析プロンプトです。 */
 export function buildReportPrompt(input: ReportRequestInput): string {
-  const reportType: ReportType = input.reportType === 'weekly' || input.reportType === 'monthly'
+  const reportType: ReportType = input.reportType === 'weekly' || input.reportType === 'monthly' || input.reportType === 'custom'
     ? input.reportType
     : 'daily';
   const records = input.records?.length ? input.records : [input];
-  const periodName = reportType === 'daily' ? '今日' : reportType === 'weekly' ? '今週' : '今月';
+  const periodName = reportType === 'daily' ? '今日' : reportType === 'weekly' ? '今週' : reportType === 'monthly' ? '今月' : '指定期間';
   const headings = REPORT_HEADINGS[reportType].map(heading => `## ${heading}`).join('\n');
 
   return `あなたは、忙しい社会人の一日をやさしく客観視し、本人が気づいていない頑張りを見つけるジャーナリングAIです。
