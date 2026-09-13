@@ -325,6 +325,7 @@
 
   <script>
     const STORAGE_KEY = 'oneStepRecords';
+    const PROFILE_STORAGE_KEYS = ['oneStepAiProfile', 'oneStepProfile', 'aiProfile'];
     const AUTOSAVE_DELAY = 400;
     const REPORT_TIMEOUT = 45000;
     const ANALYSIS_MESSAGES = [
@@ -447,14 +448,15 @@
       };
     }
 
-    // AIプロフィール画面は今後追加予定。既存キーがあれば利用し、未設定でも生成できます。
+    // 保存形式を変えず、利用可能な最新のAIプロフィールを生成ごとに読み込みます。
     function getAiProfile() {
       try {
-        const storedProfile = localStorage.getItem('oneStepAiProfile');
+        const storedProfile = PROFILE_STORAGE_KEYS
+          .map(key => localStorage.getItem(key))
+          .find(Boolean);
         if (!storedProfile) return '未設定';
         try {
-          const parsed = JSON.parse(storedProfile);
-          return typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+          return JSON.parse(storedProfile);
         } catch {
           return storedProfile;
         }
